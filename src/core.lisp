@@ -36,7 +36,8 @@
    :dz-variable.data
    :dz-function
 
-   :square))
+   :square
+   :exponential))
 (in-package :dezero-naive.core)
 
 (defgeneric call (callable-object &rest arguments))
@@ -64,4 +65,10 @@
 
 (defmethod forward ((func square) &rest arguments)
   (let* ((x (first arguments)))
-    (loop for i across x collect (* i i))))
+    (map 'vector (lambda (i) (* i i)) x)))
+
+(defclass exponential (dz-function) ())
+
+(defmethod forward ((func exponential) &rest arguments)
+  (let* ((x (first arguments)))
+    (map 'vector #'exp x)))
