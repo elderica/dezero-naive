@@ -25,6 +25,43 @@
 
 (in-package :cl-user)
 (defpackage :dezero-naive.core
+  (:nicknames :dezero-naive.core)
   (:use :cl)
-  (:nicknames :dezero-naive.core))
+  (:export
+   :call
+   :forward
+   :backward
+
+   :dz-variable
+   :dz-variable.data
+   :dz-function
+
+   :square))
 (in-package :dezero-naive.core)
+
+(defgeneric call (callable-object &rest arguments))
+(defgeneric forward (self &rest arguments))
+(defgeneric backward (self &rest arguments))
+
+(defclass dz-variable ()
+  ((data :initarg :data
+	 :accessor dz-variable.data)))
+
+(defclass dz-function ()
+  ((input :initarg :input
+	  :accessor dz-function.input)
+   (output :initarg :output
+	   :accessor dz-function.output)))
+
+(defmethod call ((func dz-function) &rest arguments)
+  (let* ((input (first arguments))
+	 (x (dz-variable.data input))
+	 (y (forward func x))
+	 (output (make-instance 'dz-variable :data y)))
+    output))
+
+(defclass square (dz-function) ())
+
+(defmethod forward ((func square) &rest arguments)
+  (let* ((x (first arguments)))
+    (loop for i across x collect (* i i))))
