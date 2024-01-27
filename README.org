@@ -1,0 +1,59 @@
+* dezero-naive
+
+dezero in Common Lisp
+
+** TODO Fill me in
+
+* Requirements
+
+- [[https://www.quicklisp.org/beta/][Quicklisp]]
+
+* Installation
+
+Clone the repo in your [[https://www.quicklisp.org/beta/faq.html][Quicklisp local-projects]] directory.
+
+#+begin_src lisp
+(ql:register-local-projects)
+#+end_src
+
+Then load the system.
+
+#+begin_src lisp
+(ql:quickload :dezero-naive)
+#+end_src
+
+* Usage
+
+** TODO Fill me in
+
+* Tests
+
+The =dezero-naive= tests are provided as part of the
+=:dezero-naive.test= system.
+
+In order to run the tests you can evaluate the following expressions.
+
+#+begin_src lisp
+CL-USER> (ql:quickload :dezero-naive.test)
+CL-USER> (asdf:test-system :dezero-naive.test)
+#+end_src
+
+Or you can run the tests using the =scripts/run-tests.sh= shell script
+instead, e.g.
+
+#+begin_src shell
+env LISP=sbcl ./scripts/run-tests.sh
+#+end_src
+
+* Contributing
+
+=dezero-naive= is hosted on [[https://github.com/elderica/dezero-naive][Github]]. Please contribute by reporting
+issues, suggesting features or by sending patches using pull requests.
+
+* Authors
+
+- elderica <[[mailto:1130138+elderica@users.noreply.github.com][1130138+elderica@users.noreply.github.com]]>
+
+* License
+
+This project is Open Source and licensed under the [[http://opensource.org/licenses/BSD-2-Clause][BSD License]].
