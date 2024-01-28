@@ -8,13 +8,13 @@
        (f (make-instance 'square))
        (y (call f x)))
   (format t "~A~%"
-	  (dz-variable.data y)))
+          (dz-variable.data y)))
 
 (let* ((x (make-instance 'dz-variable :data (vector 0.5)))
        (f (make-instance 'exponential))
        (y (call f x)))
   (format t "~A~%"
-	  (dz-variable.data y)))
+          (dz-variable.data y)))
 
 (let* ((af (make-instance 'square))
        (bf (make-instance 'exponential))
@@ -24,4 +24,17 @@
        (b (call bf a))
        (y (call cf b)))
   (format t "~A~%"
-	  (dz-variable.data y)))
+          (dz-variable.data y)))
+
+(let* ((f (make-instance 'square))
+       (x (make-instance 'dz-variable :data (vector 2.0)))
+       (dy (numerical-diff f x)))
+  (format t "~A~%" dy))
+
+(let* ((cf (compose (make-instance 'square)
+                    (make-instance 'exponential)
+                    (make-instance 'square)))
+       (x (make-instance 'dz-variable :data (vector 0.5)))
+       (dy (numerical-diff cf x)))
+  (format t "~A~%"
+          dy))

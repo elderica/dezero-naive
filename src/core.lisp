@@ -37,7 +37,11 @@
    :dz-function
 
    :square
-   :exponential))
+   :exponential
+
+   :numerical-diff
+
+   :compose))
 (in-package :dezero-naive.core)
 
 (defgeneric call (callable-object &rest arguments))
@@ -46,19 +50,19 @@
 
 (defclass dz-variable ()
   ((data :initarg :data
-	 :accessor dz-variable.data)))
+         :accessor dz-variable.data)))
 
 (defclass dz-function ()
   ((input :initarg :input
-	  :accessor dz-function.input)
+          :accessor dz-function.input)
    (output :initarg :output
-	   :accessor dz-function.output)))
+           :accessor dz-function.output)))
 
 (defmethod call ((func dz-function) &rest arguments)
   (let* ((input (first arguments))
-	 (x (dz-variable.data input))
-	 (y (forward func x))
-	 (output (make-instance 'dz-variable :data y)))
+         (x (dz-variable.data input))
+         (y (forward func x))
+         (output (make-instance 'dz-variable :data y)))
     output))
 
 (defclass square (dz-function) ())
@@ -72,3 +76,38 @@
 (defmethod forward ((func exponential) &rest arguments)
   (let* ((x (first arguments)))
     (map 'vector #'exp x)))
+
+(defun numerical-diff (func x &optional (eps 1e-4))
+  (let* ((x0 (make-instance 'dz-variable
+                            :data (map 'vector (lambda (i) (- i eps))
+                                       (dz-variable.data x))))
+         (x1 (make-instance 'dz-variable
+                            :data (map 'vector (lambda (i) (+ i eps))
+                                       (dz-variable.data x))))
+         (y0 (call func x0))
+         (y1 (call func x1)))
+    (map 'vector (lambda (i) (/ i (* 2.0 eps)))
+         (loop for i1 across (dz-variable.data y1)
+               for i0 across (dz-variable.data y0)
+               collect (- i1 i0)))))
+
+(defclass composed-function (dz-function)
+  ((second :initarg :second)
+   (first :initarg :first)))
+
+(defun compose-two (second first)
+  (make-instance 'composed-function
+                 :second second
+                 :first first))
+
+(defun compose (&rest functions)
+  (if (null (rest functions))
+      (first functions)
+      (compose-two (first functions)
+                   (apply #'compose (rest functions)))))
+
+(defmethod call ((self composed-function) &rest arguments)
+  (let* ((x (first arguments))
+         (g (slot-value self 'second))
+         (f (slot-value self 'first)))
+    (call g (call f x))))
