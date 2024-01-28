@@ -38,3 +38,22 @@
        (dy (numerical-diff cf x)))
   (format t "~A~%"
           dy))
+
+(let* ((af (make-instance 'square))
+       (bf (make-instance 'exponential))
+       (cf (make-instance 'square))
+
+       (x (make-instance 'dz-variable :data (vector 0.5)))
+       (a (call af x))
+       (b (call bf a))
+       (y (call cf b)))
+  (format t "data: ~A~%" (dz-variable.data y))
+  (setf (dz-variable.gradient y) (vector 1.0))
+  (setf (dz-variable.gradient b)
+        (backward cf (dz-variable.gradient y)))
+  (setf (dz-variable.gradient a)
+        (backward bf (dz-variable.gradient b)))
+  (setf (dz-variable.gradient x)
+        (backward af (dz-variable.gradient a)))
+  (format t "gradient: ~A~%"
+          (dz-variable.gradient x)))

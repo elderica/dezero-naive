@@ -34,6 +34,8 @@
 
    :dz-variable
    :dz-variable.data
+   :dz-variable.gradient
+
    :dz-function
 
    :square
@@ -50,12 +52,17 @@
 
 (defclass dz-variable ()
   ((data :initarg :data
-         :accessor dz-variable.data)))
+         :accessor dz-variable.data)
+   (gradient :initarg :gradient
+             :initform nil
+             :accessor dz-variable.gradient)))
 
 (defclass dz-function ()
   ((input :initarg :input
+          :initform nil
           :accessor dz-function.input)
    (output :initarg :output
+           :initform nil
            :accessor dz-function.output)))
 
 (defmethod call ((func dz-function) &rest arguments)
@@ -63,6 +70,7 @@
          (x (dz-variable.data input))
          (y (forward func x))
          (output (make-instance 'dz-variable :data y)))
+    (setf (dz-function.input func) input)
     output))
 
 (defclass square (dz-function) ())
@@ -71,11 +79,23 @@
   (let* ((x (first arguments)))
     (map 'vector (lambda (i) (* i i)) x)))
 
+(defmethod backward ((func square) &rest arguments)
+  (let* ((gy (first arguments))
+         (x (dz-variable.data (dz-function.input func)))
+         (gx (map 'vector (lambda (i0 i1) (* i0 i1 2.0)) x gy)))
+    gx))
+
 (defclass exponential (dz-function) ())
 
 (defmethod forward ((func exponential) &rest arguments)
   (let* ((x (first arguments)))
     (map 'vector #'exp x)))
+
+(defmethod backward ((func exponential) &rest arguments)
+  (let* ((gy (first arguments))
+         (x (dz-variable.data (dz-function.input func)))
+         (gx (map 'vector (lambda (i0 i1) (* (exp i0) i1)) x gy)))
+    gx))
 
 (defun numerical-diff (func x &optional (eps 1e-4))
   (let* ((x0 (make-instance 'dz-variable
