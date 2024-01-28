@@ -70,3 +70,11 @@
   (backward y)
   (format t "gradient: ~A~%"
           (dz-variable.gradient x)))
+
+(let* ((x (make-instance 'dz-variable :data (vector 0.5)))
+       (a (squaref x))
+       (b (exponentialf a))
+       (y (squaref b)))
+  (backward y)
+  (format t "gradient: ~A~%"
+          (dz-variable.gradient x)))
