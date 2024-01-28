@@ -35,6 +35,7 @@
    :dz-variable
    :dz-variable.data
    :dz-variable.gradient
+   :dz-variable.creator
 
    :dz-function
 
@@ -53,9 +54,22 @@
 (defclass dz-variable ()
   ((data :initarg :data
          :accessor dz-variable.data)
-   (gradient :initarg :gradient
-             :initform nil
-             :accessor dz-variable.gradient)))
+   (gradient :initform nil
+             :accessor dz-variable.gradient)
+   (creator :initform nil
+            :accessor dz-variable.creator)))
+
+(defmethod set-creator ((var dz-variable) func)
+  (setf (dz-variable.creator var) func))
+
+(defmethod backward ((var dz-variable) &rest arguments)
+  (declare (ignore arguments))
+  (let ((func (dz-variable.creator var)))
+    (when func
+      (let ((x (dz-function.input func)))
+        (setf (dz-variable.gradient x)
+              (backward func (dz-variable.gradient var)))
+        (backward x)))))
 
 (defclass dz-function ()
   ((input :initarg :input
@@ -70,7 +84,9 @@
          (x (dz-variable.data input))
          (y (forward func x))
          (output (make-instance 'dz-variable :data y)))
+    (set-creator output func)
     (setf (dz-function.input func) input)
+    (setf (dz-function.output func) output)
     output))
 
 (defclass square (dz-function) ())
