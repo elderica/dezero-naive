@@ -140,10 +140,9 @@
                                        (dz-variable.data x))))
          (y0 (call func x0))
          (y1 (call func x1)))
-    (map 'vector (lambda (i) (/ i (* 2.0d0 eps)))
-         (loop for i1 across (dz-variable.data y1)
-               for i0 across (dz-variable.data y0)
-               collect (- i1 i0)))))
+    (map 'vector (lambda (i1 i0) (/ (- i1 i0) (* 2.0d0 eps)))
+         (dz-variable.data y1)
+         (dz-variable.data y0))))
 
 (defclass composed-function (dz-function)
   ((second :initarg :second)
