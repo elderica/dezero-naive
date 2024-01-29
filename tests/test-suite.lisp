@@ -27,5 +27,41 @@
 (defpackage :dezero-naive.test
   (:use :cl :rove)
   (:nicknames :dezero-naive.test)
-  (:import-from :dezero-naive))
+  (:import-from :dezero-naive
+   :backward
+
+   :dz-variable
+   :dz-variable.data
+   :dz-variable.gradient
+
+   :square
+   :squaref
+
+   :numerical-diff))
 (in-package :dezero-naive.test)
+
+(deftest square-test
+  (testing "test forword"
+    (let* ((x (make-instance 'dz-variable :data (vector 2.0d0)))
+           (y (squaref x))
+           (expected (vector 4.0d0)))
+      (ok (equalp (dz-variable.data y)
+                  expected))))
+  (testing "test backward"
+    (let* ((x (make-instance 'dz-variable :data (vector 3.0d0)))
+           (y (squaref x))
+           (expected (vector 6.0d0)))
+      (backward y)
+      (ok (equalp (dz-variable.gradient x)
+                  expected))))
+
+  (testing "test gradient check"
+    (let* ((x (make-instance 'dz-variable :data (vector (random 1.0d0))))
+           (y (squaref x)))
+      (backward y)
+      (let* ((num-grad (numerical-diff (make-instance 'square) x)))
+        (ok (loop for x across (dz-variable.gradient x)
+                  for y across num-grad
+                  always (<= (/ (abs (- x y))
+                                (abs x))
+                             1d-08)))))))

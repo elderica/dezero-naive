@@ -72,7 +72,7 @@
   (unless (dz-variable.gradient var)
     (setf (dz-variable.gradient var)
           (make-array (array-dimensions (dz-variable.data var))
-                      :initial-element 1.0)))
+                      :initial-element 1.0d0)))
   (loop with funcs = (list (dz-variable.creator var))
         until (null funcs)
         do (let* ((func (pop funcs))
@@ -113,7 +113,7 @@
 (defmethod backward ((func square) &rest arguments)
   (let* ((gy (first arguments))
          (x (dz-variable.data (dz-function.input func)))
-         (gx (map 'vector (lambda (i0 i1) (* i0 i1 2.0)) x gy)))
+         (gx (map 'vector (lambda (i0 i1) (* i0 i1 2.0d0)) x gy)))
     gx))
 
 (defclass exponential (dz-function) ())
@@ -131,7 +131,7 @@
          (gx (map 'vector (lambda (i0 i1) (* (exp i0) i1)) x gy)))
     gx))
 
-(defun numerical-diff (func x &optional (eps 1e-4))
+(defun numerical-diff (func x &optional (eps 1d-4))
   (let* ((x0 (make-instance 'dz-variable
                             :data (map 'vector (lambda (i) (- i eps))
                                        (dz-variable.data x))))
@@ -140,7 +140,7 @@
                                        (dz-variable.data x))))
          (y0 (call func x0))
          (y1 (call func x1)))
-    (map 'vector (lambda (i) (/ i (* 2.0 eps)))
+    (map 'vector (lambda (i) (/ i (* 2.0d0 eps)))
          (loop for i1 across (dz-variable.data y1)
                for i0 across (dz-variable.data y0)
                collect (- i1 i0)))))
