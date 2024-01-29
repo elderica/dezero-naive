@@ -49,7 +49,7 @@
    :compose))
 (in-package :dezero-naive.core)
 
-(defgeneric call (callable-object &rest arguments))
+(defgeneric call (callable-object input))
 (defgeneric forward (self &rest arguments))
 (defgeneric backward (self &rest arguments))
 
@@ -91,9 +91,8 @@
            :initform nil
            :accessor dz-function.output)))
 
-(defmethod call ((func dz-function) &rest arguments)
-  (let* ((input (first arguments))
-         (x (dz-variable.data input))
+(defmethod call ((func dz-function) input)
+  (let* ((x (dz-variable.data input))
          (y (forward func x))
          (output (make-instance 'dz-variable :data y)))
     (set-creator output func)
@@ -159,8 +158,7 @@
       (compose-two (first functions)
                    (apply #'compose (rest functions)))))
 
-(defmethod call ((self composed-function) &rest arguments)
-  (let* ((x (first arguments))
-         (g (slot-value self 'second))
-         (f (slot-value self 'first)))
-    (call g (call f x))))
+(defmethod call ((self composed-function) input)
+  (let ((g (slot-value self 'second))
+        (f (slot-value self 'first)))
+    (call g (call f input))))
