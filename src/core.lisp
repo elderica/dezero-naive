@@ -36,8 +36,8 @@
    :dz-variable.data
    :dz-variable.gradient
 
+   :<square>
    :square
-   :squaref
 ;;   :exponential
 ;;   :exponentialf
 
@@ -102,15 +102,15 @@
     (setf (dz-function.output func) output)
     output))
 
-(defclass square (dz-function) ())
+(defclass <square> (dz-function) ())
 
-(defun squaref (x)
-  (call (make-instance 'square) x))
+(defun square (x)
+  (call (make-instance '<square>) x))
 
-(defmethod forward ((func square) x)
+(defmethod forward ((func <square>) x)
   (map 'vector (lambda (i) (* i i)) x))
 
-(defmethod backward ((func square) &optional gy)
+(defmethod backward ((func <square>) &optional gy)
   (let* ((x (dz-variable.data (dz-function.input func)))
          (gx (map 'vector (lambda (i0 i1) (* i0 i1 2.0d0)) x gy)))
     gx))
