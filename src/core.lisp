@@ -65,6 +65,7 @@
   (setf (dz-variable.creator var) func))
 
 (defmethod backward ((var dz-variable) &optional gy)
+  (declare (ignore gy))
   (unless (dz-variable.gradient var)
     (setf (dz-variable.gradient var)
           (make-array (array-dimensions (dz-variable.data var))
