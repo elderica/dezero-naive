@@ -42,8 +42,8 @@
 ;;   :exponentialf
 
    :numerical-diff
-
-   :compose))
+   ))
+;;   :compose))
 (in-package :dezero-naive.core)
 
 (defgeneric call (func input))
@@ -143,22 +143,22 @@
          (dz-variable.data y1)
          (dz-variable.data y0))))
 
-(defclass composed-function (dz-function)
-  ((second :initarg :second)
-   (first :initarg :first)))
+;; (defclass <composed-function> (dz-function)
+;;   ((second :initarg :second)
+;;    (first :initarg :first)))
 
-(defun compose-two (second first)
-  (make-instance 'composed-function
-                 :second second
-                 :first first))
+;; (defun compose-two (second first)
+;;   (make-instance '<composed-function>
+;;                  :second second
+;;                  :first first))
 
-(defun compose (&rest functions)
-  (if (null (rest functions))
-      (first functions)
-      (compose-two (first functions)
-                   (apply #'compose (rest functions)))))
+;; (defun compose (&rest functions)
+;;   (if (null (rest functions))
+;;       (first functions)
+;;       (compose-two (first functions)
+;;                    (apply #'compose (rest functions)))))
 
-(defmethod call ((self composed-function) input)
-  (let ((g (slot-value self 'second))
-        (f (slot-value self 'first)))
-    (call g (call f input))))
+;; (defmethod call ((self <composed-function>) input)
+;;   (let ((g (slot-value self 'second))
+;;         (f (slot-value self 'first)))
+;;     (call g (call f input))))
