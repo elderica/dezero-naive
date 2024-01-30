@@ -37,6 +37,8 @@
    :@data
    :@gradient
 
+   :<add>
+
    :<square>
    :square
 ;;   :exponential
@@ -117,6 +119,14 @@
     (setf (@inputs func) inputs)
     (setf (@outputs func) outputs)
     outputs))
+
+(defclass <add> (<function>) ())
+
+(defmethod forward ((func <add>) xs)
+  (let* ((x0 (first xs))
+         (x1 (second xs))
+         (y (+ (aref x0 0) (aref x1 0))))
+    (vector y)))
 
 (defclass <square> (<function>) ())
 
