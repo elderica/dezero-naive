@@ -47,7 +47,7 @@
 ;;   :compose))
 (in-package :dezero-naive.core)
 
-(defgeneric call (func input))
+(defgeneric call (func inputs))
 (defgeneric forward (func x))
 (defgeneric backward (func-or-var &optional gy))
 
@@ -83,8 +83,8 @@
   (loop with funcs = (list (@creator var))
         until (null funcs)
         do (let* ((func (pop funcs))
-                  (x (@input func))
-                  (y (@output func)))
+                  (x (@inputs func))
+                  (y (@outputs func)))
              (setf (@gradient x)
                    (backward func (@gradient y)))
              (when (@creator x)
@@ -96,27 +96,25 @@
     (t (vector x))))
 
 (defclass <function> ()
-  ((input :initarg :input
-          :initform nil
-          :accessor @input)
-   (output :initarg :output
-           :initform nil
-           :accessor @output)))
+  ((inputs :initform nil
+           :accessor @inputs)
+   (outputs :initform nil
+           :accessor @outputs)))
 
 (defmethod print-object ((func <function>) stream)
   (print-unreadable-object (func stream :type t :identity nil)
     (format stream
             "~:@_~<inputs: ~W ~:_outputs: ~W~:>"
-            (list (@input func) (@output func)))))
+            (list (@inputs func) (@outputs func)))))
 
-(defmethod call ((func <function>) input)
-  (let* ((x (@data input))
+(defmethod call ((func <function>) inputs)
+  (let* ((x (@data inputs))
          (y (forward func x))
-         (output (make-variable (as-array y))))
-    (set-creator output func)
-    (setf (@input func) input)
-    (setf (@output func) output)
-    output))
+         (outputs (make-variable (as-array y))))
+    (set-creator outputs func)
+    (setf (@inputs func) inputs)
+    (setf (@outputs func) outputs)
+    outputs))
 
 (defclass <square> (<function>) ())
 
@@ -127,7 +125,7 @@
   (map 'vector (lambda (i) (* i i)) x))
 
 (defmethod backward ((func <square>) &optional gy)
-  (let* ((x (@data (@input func)))
+  (let* ((x (@data (@inputs func)))
          (gx (map 'vector (lambda (i0 i1) (* i0 i1 2.0d0)) x gy)))
     gx))
 
