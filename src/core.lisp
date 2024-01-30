@@ -33,6 +33,7 @@
    :backward
 
    :<variable>
+   :make-variable
    :@data
    :@gradient
 
@@ -60,6 +61,9 @@
 
 (defmethod initialize-instance :after ((var <variable>) &key)
   (check-type (slot-value var 'data) (array * *)))
+
+(defun make-variable (data)
+  (make-instance '<variable> :data data))
 
 (defmethod set-creator ((var <variable>) func)
   (setf (@creator var) func))
@@ -96,7 +100,7 @@
 (defmethod call ((func <function>) input)
   (let* ((x (@data input))
          (y (forward func x))
-         (output (make-instance '<variable> :data (as-array y))))
+         (output (make-variable (as-array y))))
     (set-creator output func)
     (setf (@input func) input)
     (setf (@output func) output)
@@ -131,12 +135,8 @@
 ;;     gx))
 
 (defun numerical-diff (func x &optional (eps 1d-4))
-  (let* ((x0 (make-instance '<variable>
-                            :data (map 'vector (lambda (i) (- i eps))
-                                       (@data x))))
-         (x1 (make-instance '<variable>
-                            :data (map 'vector (lambda (i) (+ i eps))
-                                       (@data x))))
+  (let* ((x0 (make-variable (map 'vector (lambda (i) (- i eps)) (@data x))))
+         (x1 (make-variable (map 'vector (lambda (i) (+ i eps)) (@data x))))
          (y0 (call func x0))
          (y1 (call func x1)))
     (map 'vector (lambda (i1 i0) (/ (- i1 i0) (* 2.0d0 eps)))
