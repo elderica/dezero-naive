@@ -49,9 +49,9 @@
    :compose))
 (in-package :dezero-naive.core)
 
-(defgeneric call (callable-object input))
-(defgeneric forward (self &rest arguments))
-(defgeneric backward (self &rest arguments))
+(defgeneric call (func input))
+(defgeneric forward (func x))
+(defgeneric backward (func-or-var &optional gy))
 
 (defclass dz-variable ()
   ((data :initarg :data
@@ -67,8 +67,7 @@
 (defmethod set-creator ((var dz-variable) func)
   (setf (dz-variable.creator var) func))
 
-(defmethod backward ((var dz-variable) &rest arguments)
-  (declare (ignore arguments))
+(defmethod backward ((var dz-variable) &optional gy)
   (unless (dz-variable.gradient var)
     (setf (dz-variable.gradient var)
           (make-array (array-dimensions (dz-variable.data var))
