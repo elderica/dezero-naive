@@ -82,6 +82,11 @@
              (when (dz-variable.creator x)
                (push (dz-variable.creator x) funcs)))))
 
+(defun as-array (x)
+  (typecase x
+    ((array * *) x)
+    (t (vector x))))
+
 (defclass dz-function ()
   ((input :initarg :input
           :initform nil
@@ -93,7 +98,7 @@
 (defmethod call ((func dz-function) input)
   (let* ((x (dz-variable.data input))
          (y (forward func x))
-         (output (make-instance 'dz-variable :data y)))
+         (output (make-instance 'dz-variable :data (as-array y))))
     (set-creator output func)
     (setf (dz-function.input func) input)
     (setf (dz-function.output func) output)
