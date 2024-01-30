@@ -65,6 +65,12 @@
 (defun make-variable (data)
   (make-instance '<variable> :data data))
 
+(defmethod print-object ((var <variable>) stream)
+  (print-unreadable-object (var stream :type t :identity nil)
+    (format stream
+            "~:@_~<data: ~W ~_gradient: ~W ~_creator: ~W~:>"
+            (list (@data var) (@gradient var) (@creator var)))))
+
 (defmethod set-creator ((var <variable>) func)
   (setf (@creator var) func))
 
@@ -96,6 +102,12 @@
    (output :initarg :output
            :initform nil
            :accessor @output)))
+
+(defmethod print-object ((func <function>) stream)
+  (print-unreadable-object (func stream :type t :identity nil)
+    (format stream
+            "~:@_~<inputs: ~W ~:_outputs: ~W~:>"
+            (list (@input func) (@output func)))))
 
 (defmethod call ((func <function>) input)
   (let* ((x (@data input))
