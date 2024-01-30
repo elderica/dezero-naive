@@ -30,9 +30,9 @@
   (:import-from :dezero-naive
    :backward
 
-   :dz-variable
-   :dz-variable.data
-   :dz-variable.gradient
+   :<variable>
+   :@data
+   :@gradient
 
    :<square>
    :square
@@ -42,25 +42,25 @@
 
 (deftest square-test
   (testing "test forword"
-    (let* ((x (make-instance 'dz-variable :data (vector 2.0d0)))
+    (let* ((x (make-instance '<variable> :data (vector 2.0d0)))
            (y (square x))
            (expected (vector 4.0d0)))
-      (ok (equalp (dz-variable.data y)
+      (ok (equalp (@data y)
                   expected))))
   (testing "test backward"
-    (let* ((x (make-instance 'dz-variable :data (vector 3.0d0)))
+    (let* ((x (make-instance '<variable> :data (vector 3.0d0)))
            (y (square x))
            (expected (vector 6.0d0)))
       (backward y)
-      (ok (equalp (dz-variable.gradient x)
+      (ok (equalp (@gradient x)
                   expected))))
 
   (testing "test gradient check"
-    (let* ((x (make-instance 'dz-variable :data (vector (random 1.0d0))))
+    (let* ((x (make-instance '<variable> :data (vector (random 1.0d0))))
            (y (square x)))
       (backward y)
       (let* ((num-grad (numerical-diff (make-instance '<square>) x)))
-        (ok (loop for x across (dz-variable.gradient x)
+        (ok (loop for x across (@gradient x)
                   for y across num-grad
                   always (<= (/ (abs (- x y))
                                 (abs x))

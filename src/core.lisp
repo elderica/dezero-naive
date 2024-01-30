@@ -32,9 +32,9 @@
    :forward
    :backward
 
-   :dz-variable
-   :dz-variable.data
-   :dz-variable.gradient
+   :<variable>
+   :@data
+   :@gradient
 
    :<square>
    :square
@@ -50,59 +50,59 @@
 (defgeneric forward (func x))
 (defgeneric backward (func-or-var &optional gy))
 
-(defclass dz-variable ()
+(defclass <variable> ()
   ((data :initarg :data
-         :accessor dz-variable.data)
+         :accessor @data)
    (gradient :initform nil
-             :accessor dz-variable.gradient)
+             :accessor @gradient)
    (creator :initform nil
-            :accessor dz-variable.creator)))
+            :accessor @creator)))
 
-(defmethod initialize-instance :after ((var dz-variable) &key)
+(defmethod initialize-instance :after ((var <variable>) &key)
   (check-type (slot-value var 'data) (array * *)))
 
-(defmethod set-creator ((var dz-variable) func)
-  (setf (dz-variable.creator var) func))
+(defmethod set-creator ((var <variable>) func)
+  (setf (@creator var) func))
 
-(defmethod backward ((var dz-variable) &optional gy)
+(defmethod backward ((var <variable>) &optional gy)
   (declare (ignore gy))
-  (unless (dz-variable.gradient var)
-    (setf (dz-variable.gradient var)
-          (make-array (array-dimensions (dz-variable.data var))
+  (unless (@gradient var)
+    (setf (@gradient var)
+          (make-array (array-dimensions (@data var))
                       :initial-element 1.0d0)))
-  (loop with funcs = (list (dz-variable.creator var))
+  (loop with funcs = (list (@creator var))
         until (null funcs)
         do (let* ((func (pop funcs))
-                  (x (dz-function.input func))
-                  (y (dz-function.output func)))
-             (setf (dz-variable.gradient x)
-                   (backward func (dz-variable.gradient y)))
-             (when (dz-variable.creator x)
-               (push (dz-variable.creator x) funcs)))))
+                  (x (@input func))
+                  (y (@output func)))
+             (setf (@gradient x)
+                   (backward func (@gradient y)))
+             (when (@creator x)
+               (push (@creator x) funcs)))))
 
 (defun as-array (x)
   (typecase x
     ((array * *) x)
     (t (vector x))))
 
-(defclass dz-function ()
+(defclass <function> ()
   ((input :initarg :input
           :initform nil
-          :accessor dz-function.input)
+          :accessor @input)
    (output :initarg :output
            :initform nil
-           :accessor dz-function.output)))
+           :accessor @output)))
 
-(defmethod call ((func dz-function) input)
-  (let* ((x (dz-variable.data input))
+(defmethod call ((func <function>) input)
+  (let* ((x (@data input))
          (y (forward func x))
-         (output (make-instance 'dz-variable :data (as-array y))))
+         (output (make-instance '<variable> :data (as-array y))))
     (set-creator output func)
-    (setf (dz-function.input func) input)
-    (setf (dz-function.output func) output)
+    (setf (@input func) input)
+    (setf (@output func) output)
     output))
 
-(defclass <square> (dz-function) ())
+(defclass <square> (<function>) ())
 
 (defun square (x)
   (call (make-instance '<square>) x))
@@ -111,7 +111,7 @@
   (map 'vector (lambda (i) (* i i)) x))
 
 (defmethod backward ((func <square>) &optional gy)
-  (let* ((x (dz-variable.data (dz-function.input func)))
+  (let* ((x (@data (@input func)))
          (gx (map 'vector (lambda (i0 i1) (* i0 i1 2.0d0)) x gy)))
     gx))
 
@@ -131,17 +131,17 @@
 ;;     gx))
 
 (defun numerical-diff (func x &optional (eps 1d-4))
-  (let* ((x0 (make-instance 'dz-variable
+  (let* ((x0 (make-instance '<variable>
                             :data (map 'vector (lambda (i) (- i eps))
-                                       (dz-variable.data x))))
-         (x1 (make-instance 'dz-variable
+                                       (@data x))))
+         (x1 (make-instance '<variable>
                             :data (map 'vector (lambda (i) (+ i eps))
-                                       (dz-variable.data x))))
+                                       (@data x))))
          (y0 (call func x0))
          (y1 (call func x1)))
     (map 'vector (lambda (i1 i0) (/ (- i1 i0) (* 2.0d0 eps)))
-         (dz-variable.data y1)
-         (dz-variable.data y0))))
+         (@data y1)
+         (@data y0))))
 
 ;; (defclass <composed-function> (dz-function)
 ;;   ((second :initarg :second)
