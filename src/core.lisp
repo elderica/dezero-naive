@@ -38,8 +38,8 @@
 
    :square
    :squaref
-   :exponential
-   :exponentialf
+;;   :exponential
+;;   :exponentialf
 
    :numerical-diff
 
