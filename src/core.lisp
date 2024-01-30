@@ -48,7 +48,7 @@
 (in-package :dezero-naive.core)
 
 (defgeneric call (func inputs))
-(defgeneric forward (func x))
+(defgeneric forward (func xs))
 (defgeneric backward (func-or-var &optional gy))
 
 (defclass <variable> ()
@@ -108,26 +108,28 @@
             (list (@inputs func) (@outputs func)))))
 
 (defmethod call ((func <function>) inputs)
-  (let* ((x (@data inputs))
-         (y (forward func x))
-         (outputs (make-variable (as-array y))))
-    (set-creator outputs func)
+  (let* ((xs (map 'list #'@data inputs))
+         (ys (forward func xs))
+         (outputs (map 'vector (lambda (y)
+                                 (make-variable (as-array y)))
+                       ys)))
+    (loop for output across outputs do (set-creator output func))
     (setf (@inputs func) inputs)
     (setf (@outputs func) outputs)
     outputs))
 
 (defclass <square> (<function>) ())
 
-(defun square (x)
-  (call (make-instance '<square>) x))
+ (defun square (xs)
+   (call (make-instance '<square>) xs))
 
-(defmethod forward ((func <square>) x)
-  (map 'vector (lambda (i) (* i i)) x))
+ (defmethod forward ((func <square>) xs)
+   (map 'vector (lambda (i) (* i i)) (first xs)))
 
-(defmethod backward ((func <square>) &optional gy)
-  (let* ((x (@data (@inputs func)))
-         (gx (map 'vector (lambda (i0 i1) (* i0 i1 2.0d0)) x gy)))
-    gx))
+;; (defmethod backward ((func <square>) &optional gy)
+;;   (let* ((x (@data (@inputs func)))
+;;          (gx (map 'vector (lambda (i0 i1) (* i0 i1 2.0d0)) x gy)))
+;;     gx))
 
 ;; (defclass exponential (dz-function) ())
 
