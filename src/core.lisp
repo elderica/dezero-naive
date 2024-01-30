@@ -35,9 +35,6 @@
    :dz-variable
    :dz-variable.data
    :dz-variable.gradient
-   :dz-variable.creator
-
-   :dz-function
 
    :square
    :squaref
