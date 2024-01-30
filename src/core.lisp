@@ -105,30 +105,28 @@
 (defun squaref (x)
   (call (make-instance 'square) x))
 
-(defmethod forward ((func square) &rest arguments)
-  (let* ((x (first arguments)))
-    (map 'vector (lambda (i) (* i i)) x)))
+(defmethod forward ((func square) x)
+  (map 'vector (lambda (i) (* i i)) x))
 
-(defmethod backward ((func square) &rest arguments)
-  (let* ((gy (first arguments))
-         (x (dz-variable.data (dz-function.input func)))
+(defmethod backward ((func square) &optional gy)
+  (let* ((x (dz-variable.data (dz-function.input func)))
          (gx (map 'vector (lambda (i0 i1) (* i0 i1 2.0d0)) x gy)))
     gx))
 
-(defclass exponential (dz-function) ())
+;; (defclass exponential (dz-function) ())
 
-(defun exponentialf (x)
-  (call (make-instance 'exponential) x))
+;; (defun exponentialf (x)
+;;   (call (make-instance 'exponential) x))
 
-(defmethod forward ((func exponential) &rest arguments)
-  (let* ((x (first arguments)))
-    (map 'vector #'exp x)))
+;; (defmethod forward ((func exponential) &rest arguments)
+;;   (let* ((x (first arguments)))
+;;     (map 'vector #'exp x)))
 
-(defmethod backward ((func exponential) &rest arguments)
-  (let* ((gy (first arguments))
-         (x (dz-variable.data (dz-function.input func)))
-         (gx (map 'vector (lambda (i0 i1) (* (exp i0) i1)) x gy)))
-    gx))
+;; (defmethod backward ((func exponential) &rest arguments)
+;;   (let* ((gy (first arguments))
+;;          (x (dz-variable.data (dz-function.input func)))
+;;          (gx (map 'vector (lambda (i0 i1) (* (exp i0) i1)) x gy)))
+;;     gx))
 
 (defun numerical-diff (func x &optional (eps 1d-4))
   (let* ((x0 (make-instance 'dz-variable
