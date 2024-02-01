@@ -58,15 +58,15 @@
            (ysv (map 'vector #'@data ys))
            (expected (vector (vector 49.0d0)
                              (vector 25.0d0))))
-      (ok (equalp ysv expected)))))
+      (ok (equalp ysv expected))))
 
-  ;; (testing "test backward"
-  ;;   (let* ((x (make-variable (vector 3.0d0)))
-  ;;          (y (square x))
-  ;;          (expected (vector 6.0d0)))
-  ;;     (backward y)
-  ;;     (ok (equalp (@gradient x)
-  ;;                 expected))))
+  (testing "test backward"
+    (let* ((x (make-variable (vector 3.0d0)))
+           (y (square x))
+           (expected 6.0d0))
+      (backward y)
+      (ok (equalp (@gradient x)
+                  expected)))))
 
   ;; (testing "test gradient check"
   ;;   (let* ((x (make-variable (vector (random 1.0d0))))
@@ -86,3 +86,13 @@
            (y (add x0 x1))
            (expected (vector 12.0d0)))
       (ok (equalp (@data y) expected)))))
+
+(deftest add-square-test
+  (testing "test backward add and square"
+    (let* ((x (make-variable (vector 2.0d0)))
+           (y (make-variable (vector 3.0d0)))
+           (z (add (square x) (square y))))
+      (backward z)
+      (ok (and (= (aref (@data z) 0) 13.0d0)
+               (= (@gradient x) 4.0d0)
+               (= (@gradient y) 6.0d0))))))

@@ -89,12 +89,17 @@
   (loop with funcs = (list (@creator var))
         until (null funcs)
         do (let* ((func (pop funcs))
-                  (x (@inputs func))
-                  (y (@outputs func)))
-             (setf (@gradient x)
-                   (backward func (@gradient y)))
-             (when (@creator x)
-               (push (@creator x) funcs)))))
+                  (gys (map 'list #'@gradient (@outputs func)))
+                  (gxs (let ((it (apply #'backward func gys)))
+                         (if (typep it '(array * *))
+                             it
+                             (vector it)))))
+             (loop for x across (@inputs func)
+                   for gx across gxs
+                   do (progn
+                        (setf (@gradient x) gx)
+                        (when (@creator x)
+                          (push (@creator x) funcs)))))))
 
 (defun as-array (x)
   (typecase x
@@ -123,7 +128,7 @@
                                  (make-variable (as-array y)))
                        ys)))
     (loop for output across outputs do (set-creator output func))
-    (setf (@inputs func) inputs)
+    (setf (@inputs func) (map 'vector #'identity inputs))
     (setf (@outputs func) outputs)
     (if (> (length outputs) 1)
         outputs
@@ -139,6 +144,9 @@
         (x1 (second xs)))
     (v+ x0 x1)))
 
+(defmethod backward ((func <add>) &optional gy)
+  (vector gy gy))
+
 (defclass <square> (<function>) ())
 
 (defun square (&rest xs)
@@ -151,10 +159,11 @@
                 x)))
     (map 'vector #'sq xs)))
 
-;; (defmethod backward ((func <square>) &optional gy)
-;;   (let* ((x (@data (@inputs func)))
-;;          (gx (map 'vector (lambda (i0 i1) (* i0 i1 2.0d0)) x gy)))
-;;     gx))
+(defmethod backward ((func <square>) &optional gy)
+  (let* ((x (@data (elt (@inputs func) 0)))
+         (gx (flet ((f (i0 i1) (* i0 i1 2.0d0)))
+               (map 'vector #'f x gy))))
+    gx))
 
 ;; (defclass exponential (dz-function) ())
 
