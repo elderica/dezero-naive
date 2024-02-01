@@ -107,11 +107,11 @@
    (outputs :initform nil
            :accessor @outputs)))
 
-(defmethod print-object ((func <function>) stream)
-  (print-unreadable-object (func stream :type t :identity nil)
-    (format stream
-            "~:@_~<inputs: ~W ~:_outputs: ~W~:>"
-            (list (@inputs func) (@outputs func)))))
+;; (defmethod print-object ((func <function>) stream)
+;;   (print-unreadable-object (func stream :type t :identity nil)
+;;     (format stream
+;;             "~:@_~<inputs: ~W ~:_outputs: ~W~:>"
+;;             (list (@inputs func) (@outputs func)))))
 
 (defmethod call ((func <function>) &rest inputs)
   (let* ((xs (map 'list #'@data inputs))
