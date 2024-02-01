@@ -38,6 +38,7 @@
    :@gradient
 
    :<add>
+   :add
 
    :<square>
    :square
@@ -49,9 +50,12 @@
 ;;   :compose))
 (in-package :dezero-naive.core)
 
-(defgeneric call (func inputs))
-(defgeneric forward (func xs))
+(defgeneric call (func &rest inputs))
+(defgeneric forward (func &rest xs))
 (defgeneric backward (func-or-var &optional gy))
+
+(defun v+ (v0 v1)
+  (map 'vector #'+ v0 v1))
 
 (defclass <variable> ()
   ((data :initarg :data
@@ -109,32 +113,43 @@
             "~:@_~<inputs: ~W ~:_outputs: ~W~:>"
             (list (@inputs func) (@outputs func)))))
 
-(defmethod call ((func <function>) inputs)
+(defmethod call ((func <function>) &rest inputs)
   (let* ((xs (map 'list #'@data inputs))
-         (ys (forward func xs))
+         (ys (let ((it (apply #'forward func xs)))
+               (if (typep it '(array * *))
+                   it
+                   (vector it))))
          (outputs (map 'vector (lambda (y)
                                  (make-variable (as-array y)))
                        ys)))
     (loop for output across outputs do (set-creator output func))
     (setf (@inputs func) inputs)
     (setf (@outputs func) outputs)
-    outputs))
+    (if (> (length outputs) 1)
+        outputs
+        (aref outputs 0))))
 
 (defclass <add> (<function>) ())
 
-(defmethod forward ((func <add>) xs)
-  (let* ((x0 (first xs))
-         (x1 (second xs))
-         (y (+ (aref x0 0) (aref x1 0))))
-    (vector y)))
+(defun add (x0 x1)
+  (call (make-instance '<add>) x0 x1))
+
+(defmethod forward ((func <add>) &rest xs)
+  (let ((x0 (first xs))
+        (x1 (second xs)))
+    (v+ x0 x1)))
 
 (defclass <square> (<function>) ())
 
- (defun square (xs)
-   (call (make-instance '<square>) xs))
+(defun square (&rest xs)
+  (apply #'call (make-instance '<square>) xs))
 
- (defmethod forward ((func <square>) xs)
-   (map 'vector (lambda (i) (* i i)) (first xs)))
+(defmethod forward ((func <square>) &rest xs)
+  (flet ((sq (x)
+           (map 'vector (lambda (i)
+                          (* i i))
+                x)))
+    (map 'vector #'sq xs)))
 
 ;; (defmethod backward ((func <square>) &optional gy)
 ;;   (let* ((x (@data (@inputs func)))

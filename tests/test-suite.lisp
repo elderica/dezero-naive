@@ -35,6 +35,9 @@
    :@data
    :@gradient
 
+   :<add>
+   :add
+
    :<square>
    :square
 
@@ -42,12 +45,21 @@
 (in-package :dezero-naive.test)
 
 (deftest square-test
-  (testing "test forword"
+  (testing "test forword single variable"
     (let* ((x (make-variable (vector 2.0d0)))
-           (ys (square (list x)))
+           (y (square x))
            (expected (vector 4.0d0)))
-      (ok (equalp (@data (aref ys 0))
+      (ok (equalp (@data y)
                   expected))))
+  (testing "test forward mutiple variables"
+    (let* ((x0 (make-variable (vector 7.0d0)))
+           (x1 (make-variable (vector 5.0d0)))
+           (ys (square x0 x1))
+           (ysv (map 'vector #'@data ys))
+           (expected (vector (vector 49.0d0)
+                             (vector 25.0d0))))
+      (ok (equalp ysv expected)))))
+
   ;; (testing "test backward"
   ;;   (let* ((x (make-variable (vector 3.0d0)))
   ;;          (y (square x))
@@ -66,4 +78,11 @@
   ;;                 always (<= (/ (abs (- x y))
   ;;                               (abs x))
   ;;                            1d-08))))))
-  )
+
+(deftest add-test
+  (testing "test forward mutiple variables"
+    (let* ((x0 (make-variable (vector 7.0d0)))
+           (x1 (make-variable (vector 5.0d0)))
+           (y (add x0 x1))
+           (expected (vector 12.0d0)))
+      (ok (equalp (@data y) expected)))))
