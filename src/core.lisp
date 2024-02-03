@@ -32,6 +32,15 @@
    :forward
    :backward
 
+   :dezero-array
+   :dezero-array-p
+   :make-dezero-array
+   :dezero-array-from
+   :dzvector
+   :full-like
+   :zeros-like
+   :ones-like
+
    :<variable>
    :make-variable
    :@data
@@ -53,6 +62,36 @@
 (defgeneric call (func &rest inputs))
 (defgeneric forward (func &rest xs))
 (defgeneric backward (func-or-var &optional gy))
+
+(defun dezero-array-p (thing)
+  (and (arrayp thing)
+       (every #'numberp thing)))
+
+(deftype dezero-array ()
+  `(and (array number *)
+        (satisfies dezero-array-p)))
+
+(defun make-dezero-array (dimensions initial-contents)
+  (make-array dimensions
+              :element-type 'number
+              :initial-contents initial-contents))
+
+(defun dezero-array-from (array)
+  (make-dezero-array (array-dimensions array) array))
+
+(defun dzvector (&rest elements)
+  (make-dezero-array (length elements) elements))
+
+(defun full-like (array fill-value)
+  (make-array (array-dimensions array)
+              :element-type 'number
+              :initial-element fill-value))
+
+(defun zeros-like (array)
+  (full-like array 0))
+
+(defun ones-like (array)
+  (full-like array 1))
 
 (defun v+ (v0 v1)
   (map 'vector #'+ v0 v1))
