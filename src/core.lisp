@@ -43,6 +43,7 @@
 
    :<variable>
    :make-variable
+   :clear-gradient
    :@data
    :@gradient
 
@@ -118,6 +119,9 @@
 (defmethod set-creator ((var <variable>) func)
   (setf (@creator var) func))
 
+(defmethod clear-gradient ((var <variable>))
+  (setf (@gradient var) nil))
+
 (defmethod backward ((var <variable>) &optional gy)
   (declare (ignore gy))
   (unless (@gradient var)
@@ -133,7 +137,10 @@
              (loop for x across (@inputs func)
                    for gx across gxs
                    do (progn
-                        (setf (@gradient x) gx)
+                        (setf (@gradient x)
+                              (if (@gradient x)
+                                  (v+ (@gradient x) gx)
+                                  gx))
                         (when (@creator x)
                           (push (@creator x) funcs)))))))
 

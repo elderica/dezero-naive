@@ -34,6 +34,7 @@
 
    :<variable>
    :make-variable
+   :clear-gradient
    :@data
    :@gradient
 
@@ -87,6 +88,29 @@
       (ok (and (= (aref (@data z) 0) 13.0d0)
                (= (@gradient x) 4.0d0)
                (= (@gradient y) 6.0d0))))))
+
+(deftest use-same-variable
+  (testing "same variable"
+    (let* ((x (make-variable (dzvector 3.d0)))
+           (y (add x x)))
+      (backward y)
+      (ok (equalp (@gradient x) (dzvector 2.d0)))))
+
+  (testing "same variable"
+    (let* ((x (make-variable (dzvector 3.d0)))
+           (y (add (add x x) x)))
+      (backward y)
+      (ok (equalp (@gradient x) (dzvector 3.d0)))))
+
+  (testing "backward twice"
+    (let* ((x (make-variable (dzvector 3.0d0)))
+           (y (add x x)))
+      (backward y)
+      (ok (equalp (@gradient x) (dzvector 2.d0)))
+      (clear-gradient x)
+      (let ((y (add (add x x) x)))
+        (backward y)
+        (ok (equalp (@gradient x) (dzvector 3.d0)))))))
 
 (deftest type-check
   (testing "must not signals with integer"
