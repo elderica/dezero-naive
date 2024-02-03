@@ -1,7 +1,9 @@
 .DEFAULT_GOAL := test
-LISP ?= sbcl
 
 test:
-	./scripts/run-tests.sh
+	sbcl --noinform --load "${HOME}/quicklisp/setup.lisp" --script scripts/run-tests.lisp
 
-.PHONY: test
+sb-cover:
+	sbcl --noinform --load "${HOME}/quicklisp/setup.lisp" --script scripts/sb-cover.lisp
+
+.PHONY: test sb-cover

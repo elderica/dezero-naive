@@ -38,13 +38,6 @@ CL-USER> (ql:quickload :dezero-naive.test)
 CL-USER> (asdf:test-system :dezero-naive.test)
 #+end_src
 
-Or you can run the tests using the =scripts/run-tests.sh= shell script
-instead, e.g.
-
-#+begin_src shell
-env LISP=sbcl ./scripts/run-tests.sh
-#+end_src
-
 * Contributing
 
 =dezero-naive= is hosted on [[https://github.com/elderica/dezero-naive][Github]]. Please contribute by reporting

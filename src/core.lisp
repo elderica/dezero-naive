@@ -1,243 +1,272 @@
-;; Copyright (c) 2024 elderica <1130138+elderica@users.noreply.github.com>
-;; All rights reserved.
-;;
-;; Redistribution and use in source and binary forms, with or without
-;; modification, are permitted provided that the following conditions
-;; are met:
-;;
-;;  1. Redistributions of source code must retain the above copyright
-;;     notice, this list of conditions and the following disclaimer
-;;     in this position and unchanged.
-;;  2. Redistributions in binary form must reproduce the above copyright
-;;     notice, this list of conditions and the following disclaimer in the
-;;     documentation and/or other materials provided with the distribution.
-;;
-;; THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) ``AS IS'' AND ANY EXPRESS OR
-;; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-;; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-;; IN NO EVENT SHALL THE AUTHOR(S) BE LIABLE FOR ANY DIRECT, INDIRECT,
-;; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-;; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-;; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-;; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-;; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 (in-package :cl-user)
 (defpackage :dezero-naive.core
   (:nicknames :dezero-naive.core)
   (:use :cl)
   (:export
+   :@a
+   :dzvector
+
    :call
-   :forward
    :backward
 
-   :dezero-array
-   :dezero-array-p
-   :make-dezero-array
-   :dezero-array-from
-   :dzvector
-   :full-like
-   :zeros-like
-   :ones-like
-
    :<variable>
-   :make-variable
-   :clear-gradient
    :@data
    :@gradient
+   :clear-gradient
+
+   :@generation
 
    :<add>
    :add
-
    :<square>
    :square
-;;   :exponential
-;;   :exponentialf
-
    ))
-;;   :compose))
+
 (in-package :dezero-naive.core)
 
-(defgeneric call (func &rest inputs))
-(defgeneric forward (func &rest xs))
-(defgeneric backward (func-or-var &optional gy))
+;;;;;;;;;;;;;;;;;;;; begin <dezero-array> ;;;;;;;;;;;;;;;;;;;;;
+(defclass <dezero-array> ()
+  ((a :initarg :a
+      :accessor @a)))
+
+(defmethod print-object ((a <dezero-array>) stream)
+  (print-unreadable-object (a stream :type t :identity nil)
+    (format stream
+             "~<~W~:>"
+             (list (@a a)))))
 
 (defun dezero-array-p (thing)
-  (and (arrayp thing)
-       (every #'numberp thing)))
+  (typep thing '<dezero-array>))
 
-(deftype dezero-array ()
-  `(and (array number *)
-        (satisfies dezero-array-p)))
+(defun make-dezero-array (dimensions &key initial-element initial-contents)
+  (declare (optimize (safety 3) (debug 3)))
+  (let ((a (cond
+             (initial-element
+              (make-array dimensions :initial-element initial-element))
+             (initial-contents
+              (make-array dimensions :initial-contents initial-contents)))))
 
-(defun make-dezero-array (dimensions initial-contents)
-  (make-array dimensions
-              :element-type 'number
-              :initial-contents initial-contents))
-
-(defun dezero-array-from (array)
-  (make-dezero-array (array-dimensions array) array))
+    (make-instance '<dezero-array> :a a)))
 
 (defun dzvector (&rest elements)
-  (make-dezero-array (length elements) elements))
+  (declare (optimize (safety 3) (debug 3)))
+  (make-dezero-array (length elements) :initial-contents elements))
 
 (defun full-like (array fill-value)
-  (make-array (array-dimensions array)
-              :element-type 'number
-              :initial-element fill-value))
+  (declare (optimize (safety 3) (debug 3)))
+  (let ((dims (array-dimensions (@a array))))
+    (make-dezero-array dims :initial-element fill-value)))
 
 (defun zeros-like (array)
+  (declare (optimize (safety 3) (debug 3)))
   (full-like array 0))
 
 (defun ones-like (array)
+  (declare (optimize (safety 3) (debug 3)))
   (full-like array 1))
 
-(defun v+ (v0 v1)
-  (map 'vector #'+ v0 v1))
+(defgeneric .+. (left right))
 
+(defmethod .+. ((left number) (right number))
+  (declare (optimize (safety 3) (debug 3)))
+  (+ left right))
+
+(defmethod .+. ((left vector) (right number))
+  (declare (optimize (safety 3) (debug 3)))
+  (map 'vector (lambda (x) (.+. x right)) left))
+
+(defmethod .+. ((left number) (right vector))
+  (declare (optimize (safety 3) (debug 3)))
+  (map 'vector (lambda (x) (.+. left x)) right))
+
+(defmethod .+. ((left vector) (right vector))
+  (declare (optimize (safety 3) (debug 3)))
+  (map 'vector #'.+. left right))
+
+(defmethod .+. ((left <dezero-array>) (right <dezero-array>))
+  (declare (optimize (safety 3) (debug 3)))
+  (let ((r (.+. (@a left) (@a right))))
+    (make-instance '<dezero-array> :a r)))
+
+
+(defgeneric .*. (left right))
+
+(defmethod .*. ((left number) (right number))
+  (* left right))
+
+(defmethod .*. ((left vector) (right number))
+  (declare (optimize (safety 3) (debug 3)))
+  (map 'vector (lambda (x) (.*. x right)) left))
+
+(defmethod .*. ((left number) (right vector))
+  (declare (optimize (safety 3) (debug 3)))
+  (map 'vector (lambda (x) (.*. left x)) right))
+
+(defmethod .*. ((left vector) (right vector))
+  (declare (optimize (safety 3) (debug 3)))
+  (map 'vector #'.*. left right))
+
+(defmethod .*. ((left number) (right <dezero-array>))
+  (declare (optimize (safety 3) (debug 3)))
+  (let ((r (.*. left (@a right))))
+    (make-instance '<dezero-array> :a r)))
+
+(defmethod .*. ((left <dezero-array>) (right <dezero-array>))
+  (declare (optimize (safety 3) (debug 3)))
+  (let ((r (.*. (@a left) (@a right))))
+    (make-instance '<dezero-array> :a r)))
+;;;;;;;;;;;;;;;;;;;; end <dezero-array> ;;;;;;;;;;;;;;;;;;;;;
+
+
+(defgeneric call (function &rest inputs))
+
+(defgeneric forward (function &rest xs))
+
+(defgeneric backward (function-or-variable &rest gys))
+
+
+;;;;;;;;;;;;;;;;;;;; begin <variable> ;;;;;;;;;;;;;;;;;;;;;
 (defclass <variable> ()
-  ((data :initarg :data
-         :accessor @data)
-   (gradient :initform nil
-             :accessor @gradient)
-   (creator :initform nil
-            :accessor @creator)))
+  ((data :initarg :data :accessor @data)
+   (gradient :initform nil :accessor @gradient)
+   (creator :initform nil :accessor @creator)
+   (generation :initform 0 :accessor @generation)))
 
 (defmethod initialize-instance :after ((var <variable>) &key)
-  (check-type (slot-value var 'data) dezero-array))
+  (check-type (@data var) <dezero-array>))
 
-(defun make-variable (data)
+(defun <variable> (data)
   (make-instance '<variable> :data data))
 
 (defmethod print-object ((var <variable>) stream)
   (print-unreadable-object (var stream :type t :identity nil)
     (format stream
-            "~:@_~<data: ~W ~_gradient: ~W ~_creator: ~W~:>"
-            (list (@data var) (@gradient var) (@creator var)))))
+            "~:@_~<data: ~W ~_gradient: ~W ~_creator: ~W ~_generation: ~W~:>"
+            (list (@data var) (@gradient var) (@creator var) (@generation var)))))
 
 (defmethod set-creator ((var <variable>) func)
-  (setf (@creator var) func))
+  (setf (@creator var) func)
+  (setf (@generation var) (+ (@generation func) 1)))
 
 (defmethod clear-gradient ((var <variable>))
   (setf (@gradient var) nil))
 
-(defmethod backward ((var <variable>) &optional gy)
-  (declare (ignore gy))
+(defmethod backward ((var <variable>) &rest gys)
+  (declare (optimize (safety 3) (debug 3)))
+  (declare (ignore gys))
+
   (unless (@gradient var)
     (setf (@gradient var) (ones-like (@data var))))
-  (loop with funcs = (list (@creator var))
-        until (null funcs)
-        do (let* ((func (pop funcs))
-                  (gys (map 'list #'@gradient (@outputs func)))
-                  (gxs (let ((it (apply #'backward func gys)))
-                         (if (typep it '(array * *))
-                             it
-                             (dzvector it)))))
-             (loop for x across (@inputs func)
-                   for gx across gxs
-                   do (progn
-                        (setf (@gradient x)
-                              (if (@gradient x)
-                                  (v+ (@gradient x) gx)
-                                  gx))
-                        (when (@creator x)
-                          (push (@creator x) funcs)))))))
+
+  (let (funcs seen-set)
+    (flet ((add-func (f)
+             (unless (member f seen-set)
+               (push f funcs)
+               (pushnew f seen-set)
+               (setf funcs (sort funcs #'> :key #'@generation)))))
+      (add-func (@creator var))
+      (loop while funcs
+            do (let* ((func (pop funcs))
+                      (gys (map 'list #'@gradient (@outputs func)))
+                      (gxs (let ((it (apply #'backward func gys)))
+                             (etypecase it
+                               (<dezero-array> (vector it))
+                               (vector it)))))
+
+                 (loop for x across (@inputs func)
+                       for gx across gxs
+                       do (progn
+                            (setf (@gradient x)
+                                  (if (@gradient x)
+                                      (.+. (@gradient x) gx)
+                                      gx))
+
+                            (when (@creator x)
+                              (add-func (@creator x))))))))))
+;;;;;;;;;;;;;;;;;;;; end <variable> ;;;;;;;;;;;;;;;;;;;;;
+
 
 (defun as-array (x)
-  (typecase x
-    ((array * *) x)
-    (t (dzvector x))))
+  (etypecase x
+    (number (dzvector x))
+    (<dezero-array> x)))
 
+
+;;;;;;;;;;;;;;;;;;;; begin <function> ;;;;;;;;;;;;;;;;;;;;;
 (defclass <function> ()
-  ((inputs :initform nil
-           :accessor @inputs)
-   (outputs :initform nil
-           :accessor @outputs)))
+  ((inputs :initform nil :accessor @inputs)
+   (outputs :initform nil :accessor @outputs)
+   (generation :initform nil :accessor @generation)))
 
-;; (defmethod print-object ((func <function>) stream)
-;;   (print-unreadable-object (func stream :type t :identity nil)
-;;     (format stream
-;;             "~:@_~<inputs: ~W ~:_outputs: ~W~:>"
-;;             (list (@inputs func) (@outputs func)))))
+(defmethod print-object ((func <function>) stream)
+  (print-unreadable-object (func stream :type t :identity nil)
+    (format stream
+            "~<generation: ~W~:>"
+            (list (@generation func)))))
 
 (defmethod call ((func <function>) &rest inputs)
+  (declare (optimize (safety 3) (debug 3)))
   (let* ((xs (map 'list #'@data inputs))
          (ys (let ((it (apply #'forward func xs)))
-               (if (typep it '(array * *))
-                   it
-                   (dzvector it))))
+               (etypecase it
+                 (<dezero-array> (vector it))
+                 (vector it))))
          (outputs (map 'vector (lambda (y)
-                                 (make-variable (as-array y)))
+                                 (<variable> (as-array y)))
                        ys)))
-    (loop for output across outputs do (set-creator output func))
+    (setf (@generation func)
+          (loop for x in inputs maximize (@generation x)))
+    (loop for output across outputs
+          do (set-creator output func))
     (setf (@inputs func) (map 'vector #'identity inputs))
     (setf (@outputs func) outputs)
     (if (> (length outputs) 1)
         outputs
         (aref outputs 0))))
+;;;;;;;;;;;;;;;;;;;; end <function> ;;;;;;;;;;;;;;;;;;;;;
 
+
+
+;;;;;;;;;;;;;;;;;;;; begin <add> ;;;;;;;;;;;;;;;;;;;;;
 (defclass <add> (<function>) ())
 
+(defun <add> () (make-instance '<add>))
+
 (defun add (x0 x1)
-  (call (make-instance '<add>) x0 x1))
+  (call (<add>) x0 x1))
 
 (defmethod forward ((func <add>) &rest xs)
+  (declare (optimize (safety 3) (debug 3)))
   (let ((x0 (first xs))
         (x1 (second xs)))
-    (v+ x0 x1)))
+    (.+. x0 x1)))
 
-(defmethod backward ((func <add>) &optional gy)
-  (vector gy gy))
+(defmethod backward ((func <add>) &rest gys)
+  (declare (optimize (safety 3) (debug 3)))
+  (let ((gy (first gys)))
+    (vector gy gy)))
+;;;;;;;;;;;;;;;;;;;; end <add> ;;;;;;;;;;;;;;;;;;;;;
 
+
+
+;;;;;;;;;;;;;;;;;;;; begin <square> ;;;;;;;;;;;;;;;;;;;;;
 (defclass <square> (<function>) ())
 
+(defun <square> () (make-instance '<square>))
+
 (defun square (&rest xs)
-  (apply #'call (make-instance '<square>) xs))
+  (declare (optimize (safety 3) (debug 3)))
+  (apply #'call (<square>) xs))
 
 (defmethod forward ((func <square>) &rest xs)
-  (flet ((sq (x)
-           (dezero-array-from
-            (map 'vector (lambda (i) (* i i)) x))))
-    (map 'vector #'sq xs)))
+  (declare (optimize (safety 3) (debug 3)))
+  (let ((x (first xs)))
+    (.*. x x)))
 
-(defmethod backward ((func <square>) &optional gy)
-  (let* ((x (@data (elt (@inputs func) 0)))
-         (gx (flet ((f (i0 i1) (* i0 i1 2)))
-               (map 'vector #'f x gy))))
-    gx))
-
-;; (defclass exponential (dz-function) ())
-
-;; (defun exponentialf (x)
-;;   (call (make-instance 'exponential) x))
-
-;; (defmethod forward ((func exponential) &rest arguments)
-;;   (let* ((x (first arguments)))
-;;     (map 'vector #'exp x)))
-
-;; (defmethod backward ((func exponential) &rest arguments)
-;;   (let* ((gy (first arguments))
-;;          (x (dz-variable.data (dz-function.input func)))
-;;          (gx (map 'vector (lambda (i0 i1) (* (exp i0) i1)) x gy)))
-;;     gx))
-
-;; (defclass <composed-function> (dz-function)
-;;   ((second :initarg :second)
-;;    (first :initarg :first)))
-
-;; (defun compose-two (second first)
-;;   (make-instance '<composed-function>
-;;                  :second second
-;;                  :first first))
-
-;; (defun compose (&rest functions)
-;;   (if (null (rest functions))
-;;       (first functions)
-;;       (compose-two (first functions)
-;;                    (apply #'compose (rest functions)))))
-
-;; (defmethod call ((self <composed-function>) input)
-;;   (let ((g (slot-value self 'second))
-;;         (f (slot-value self 'first)))
-;;     (call g (call f input))))
+(defmethod backward ((func <square>) &rest gys)
+   (declare (optimize (safety 3) (debug 3)))
+   (let* ((x (@data (elt (@inputs func) 0)))
+          (tw (.*. 2 x))
+          (gx (map 'vector (lambda (x) (.*. tw x)) gys)))
+     gx))
+;;;;;;;;;;;;;;;;;;;; end <square> ;;;;;;;;;;;;;;;;;;;;;

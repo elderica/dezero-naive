@@ -1,3 +1,0 @@
-* YEAR-MM-DD
-
-- Initial version of =dezero-naive=
