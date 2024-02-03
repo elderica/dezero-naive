@@ -43,7 +43,7 @@
    :<square>
    :square
 
-   :numerical-diff))
+   ))
 (in-package :dezero-naive.test)
 
 (deftest square-test
@@ -69,17 +69,6 @@
       (backward y)
       (ok (equalp (@gradient x)
                   expected)))))
-
-  ;; (testing "test gradient check"
-  ;;   (let* ((x (make-variable (vector (random 1.0d0))))
-  ;;          (y (square x)))
-  ;;     (backward y)
-  ;;     (let* ((num-grad (numerical-diff (make-instance '<square>) x)))
-  ;;       (ok (loop for x across (@gradient x)
-  ;;                 for y across num-grad
-  ;;                 always (<= (/ (abs (- x y))
-  ;;                               (abs x))
-  ;;                            1d-08))))))
 
 (deftest add-test
   (testing "test forward mutiple variables"

@@ -54,7 +54,6 @@
 ;;   :exponential
 ;;   :exponentialf
 
-   :numerical-diff
    ))
 ;;   :compose))
 (in-package :dezero-naive.core)
@@ -215,15 +214,6 @@
 ;;          (x (dz-variable.data (dz-function.input func)))
 ;;          (gx (map 'vector (lambda (i0 i1) (* (exp i0) i1)) x gy)))
 ;;     gx))
-
-(defun numerical-diff (func x &optional (eps 1d-4))
-  (let* ((x0 (make-variable (map 'vector (lambda (i) (- i eps)) (@data x))))
-         (x1 (make-variable (map 'vector (lambda (i) (+ i eps)) (@data x))))
-         (y0 (call func x0))
-         (y1 (call func x1)))
-    (map 'vector (lambda (i1 i0) (/ (- i1 i0) (* 2.0d0 eps)))
-         (@data y1)
-         (@data y0))))
 
 ;; (defclass <composed-function> (dz-function)
 ;;   ((second :initarg :second)
