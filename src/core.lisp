@@ -105,7 +105,7 @@
             :accessor @creator)))
 
 (defmethod initialize-instance :after ((var <variable>) &key)
-  (check-type (slot-value var 'data) (array * *)))
+  (check-type (slot-value var 'data) dezero-array))
 
 (defun make-variable (data)
   (make-instance '<variable> :data data))
@@ -132,7 +132,7 @@
                   (gxs (let ((it (apply #'backward func gys)))
                          (if (typep it '(array * *))
                              it
-                             (vector it)))))
+                             (dzvector it)))))
              (loop for x across (@inputs func)
                    for gx across gxs
                    do (progn
@@ -143,7 +143,7 @@
 (defun as-array (x)
   (typecase x
     ((array * *) x)
-    (t (vector x))))
+    (t (dzvector x))))
 
 (defclass <function> ()
   ((inputs :initform nil
@@ -162,7 +162,7 @@
          (ys (let ((it (apply #'forward func xs)))
                (if (typep it '(array * *))
                    it
-                   (vector it))))
+                   (dzvector it))))
          (outputs (map 'vector (lambda (y)
                                  (make-variable (as-array y)))
                        ys)))
@@ -193,14 +193,13 @@
 
 (defmethod forward ((func <square>) &rest xs)
   (flet ((sq (x)
-           (map 'vector (lambda (i)
-                          (* i i))
-                x)))
+           (dezero-array-from
+            (map 'vector (lambda (i) (* i i)) x))))
     (map 'vector #'sq xs)))
 
 (defmethod backward ((func <square>) &optional gy)
   (let* ((x (@data (elt (@inputs func) 0)))
-         (gx (flet ((f (i0 i1) (* i0 i1 2.0d0)))
+         (gx (flet ((f (i0 i1) (* i0 i1 2)))
                (map 'vector #'f x gy))))
     gx))
 

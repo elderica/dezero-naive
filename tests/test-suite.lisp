@@ -30,6 +30,8 @@
   (:import-from :dezero-naive
    :backward
 
+   :dzvector
+
    :<variable>
    :make-variable
    :@data
@@ -46,22 +48,22 @@
 
 (deftest square-test
   (testing "test forword single variable"
-    (let* ((x (make-variable (vector 2.0d0)))
+    (let* ((x (make-variable (dzvector 2.0d0)))
            (y (square x))
-           (expected (vector 4.0d0)))
+           (expected (dzvector 4.0d0)))
       (ok (equalp (@data y)
                   expected))))
   (testing "test forward mutiple variables"
-    (let* ((x0 (make-variable (vector 7.0d0)))
-           (x1 (make-variable (vector 5.0d0)))
+    (let* ((x0 (make-variable (dzvector 7.0d0)))
+           (x1 (make-variable (dzvector 5.0d0)))
            (ys (square x0 x1))
            (ysv (map 'vector #'@data ys))
-           (expected (vector (vector 49.0d0)
-                             (vector 25.0d0))))
+           (expected (vector (dzvector 49.0d0)
+                             (dzvector 25.0d0))))
       (ok (equalp ysv expected))))
 
   (testing "test backward"
-    (let* ((x (make-variable (vector 3.0d0)))
+    (let* ((x (make-variable (dzvector 3.0d0)))
            (y (square x))
            (expected 6.0d0))
       (backward y)
@@ -81,18 +83,30 @@
 
 (deftest add-test
   (testing "test forward mutiple variables"
-    (let* ((x0 (make-variable (vector 7.0d0)))
-           (x1 (make-variable (vector 5.0d0)))
+    (let* ((x0 (make-variable (dzvector 7.0d0)))
+           (x1 (make-variable (dzvector 5.0d0)))
            (y (add x0 x1))
-           (expected (vector 12.0d0)))
+           (expected (dzvector 12.0d0)))
       (ok (equalp (@data y) expected)))))
 
 (deftest add-square-test
   (testing "test backward add and square"
-    (let* ((x (make-variable (vector 2.0d0)))
-           (y (make-variable (vector 3.0d0)))
+    (let* ((x (make-variable (dzvector 2.0d0)))
+           (y (make-variable (dzvector 3.0d0)))
            (z (add (square x) (square y))))
       (backward z)
       (ok (and (= (aref (@data z) 0) 13.0d0)
                (= (@gradient x) 4.0d0)
                (= (@gradient y) 6.0d0))))))
+
+(deftest type-check
+  (testing "must not signals with integer"
+           (ng (signals (make-variable (dzvector 3)))))
+  (testing "must not signals with single-float"
+           (ng (signals (make-variable (dzvector 3.f0)))))
+  (testing "must not signals with double-float"
+           (ng (signals (make-variable (dzvector 3.d0)))))
+  (testing "must not signals with rational"
+           (ng (signals (make-variable (dzvector 2/3)))))
+  (testing "must signals with string"
+           (ok (signals (make-variable (dzvector "hello"))))))
