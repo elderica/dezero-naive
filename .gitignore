@@ -1,4 +1,8 @@
-# Emacs backup files
 *~
+\#*#
+.#*
+
 *.fasl
+
 /cover/
+/scratch.lisp
