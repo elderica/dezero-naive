@@ -122,7 +122,7 @@
 
 (defgeneric forward (function &rest xs))
 
-(defgeneric backward (function-or-variable &rest gys))
+(defgeneric backward (function-or-variable &optional retain-gradient &rest gys))
 
 
 ;;;;;;;;;;;;;;;;;;;; begin <variable> ;;;;;;;;;;;;;;;;;;;;;
@@ -151,7 +151,7 @@
 (defmethod clear-gradient ((var <variable>))
   (setf (@gradient var) nil))
 
-(defmethod backward ((var <variable>) &rest gys)
+(defmethod backward ((var <variable>) &optional (retain-gradient nil) &rest gys)
   (declare (optimize (safety 3) (debug 3)))
   (declare (ignore gys))
 
@@ -171,7 +171,7 @@
                                 (lambda (gy)
                                   (@gradient (tg:weak-pointer-value gy)))
                                 (@outputs func)))
-                      (gxs (let ((it (apply #'backward func gys)))
+                      (gxs (let ((it (apply #'backward func nil gys)))
                              (etypecase it
                                (<dezero-array> (vector it))
                                (vector it)))))
@@ -185,7 +185,11 @@
                                       gx))
 
                             (when (@creator x)
-                              (add-func (@creator x))))))))))
+                              (add-func (@creator x)))))
+                 (unless retain-gradient
+                   (loop for y across (@outputs func)
+                         do (setf (@gradient (tg:weak-pointer-value y))
+                                  nil))))))))
 ;;;;;;;;;;;;;;;;;;;; end <variable> ;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -244,7 +248,8 @@
         (x1 (second xs)))
     (.+. x0 x1)))
 
-(defmethod backward ((func <add>) &rest gys)
+(defmethod backward ((func <add>) &optional (retain-gradient nil) &rest gys)
+  (declare (ignore retain-gradient))
   (declare (optimize (safety 3) (debug 3)))
   (let ((gy (first gys)))
     (vector gy gy)))
@@ -266,10 +271,11 @@
   (let ((x (first xs)))
     (.*. x x)))
 
-(defmethod backward ((func <square>) &rest gys)
-   (declare (optimize (safety 3) (debug 3)))
-   (let* ((x (@data (elt (@inputs func) 0)))
-          (tw (.*. 2 x))
-          (gx (map 'vector (lambda (x) (.*. tw x)) gys)))
-     gx))
+(defmethod backward ((func <square>) &optional (retain-gradient nil) &rest gys)
+  (declare (ignore retain-gradient))
+  (declare (optimize (safety 3) (debug 3)))
+  (let* ((x (@data (elt (@inputs func) 0)))
+         (tw (.*. 2 x))
+         (gx (map 'vector (lambda (x) (.*. tw x)) gys)))
+    gx))
 ;;;;;;;;;;;;;;;;;;;; end <square> ;;;;;;;;;;;;;;;;;;;;;
