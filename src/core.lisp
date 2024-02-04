@@ -75,15 +75,18 @@
 
 (defmethod .+. ((left vector) (right number))
   (declare (optimize (safety 3) (debug 3)))
-  (map 'vector (lambda (x) (.+. x right)) left))
+  (aops:vectorize (left)
+    (+ left right)))
 
 (defmethod .+. ((left number) (right vector))
   (declare (optimize (safety 3) (debug 3)))
-  (map 'vector (lambda (x) (.+. left x)) right))
+  (aops:vectorize (right)
+    (+ left right)))
 
 (defmethod .+. ((left vector) (right vector))
   (declare (optimize (safety 3) (debug 3)))
-  (map 'vector #'.+. left right))
+  (aops:vectorize (left right)
+    (+ left right)))
 
 (defmethod .+. ((left <dezero-array>) (right <dezero-array>))
   (declare (optimize (safety 3) (debug 3)))
@@ -98,15 +101,18 @@
 
 (defmethod .*. ((left vector) (right number))
   (declare (optimize (safety 3) (debug 3)))
-  (map 'vector (lambda (x) (.*. x right)) left))
+  (aops:vectorize (left)
+    (* left right)))
 
 (defmethod .*. ((left number) (right vector))
   (declare (optimize (safety 3) (debug 3)))
-  (map 'vector (lambda (x) (.*. left x)) right))
+  (aops:vectorize (right)
+    (* left right)))
 
 (defmethod .*. ((left vector) (right vector))
   (declare (optimize (safety 3) (debug 3)))
-  (map 'vector #'.*. left right))
+  (aops:vectorize (left right)
+    (* left right)))
 
 (defmethod .*. ((left number) (right <dezero-array>))
   (declare (optimize (safety 3) (debug 3)))
