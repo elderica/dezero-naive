@@ -181,11 +181,11 @@
                                 (@outputs func)))
                       (gxs (let ((it (apply #'backward func nil gys)))
                              (etypecase it
-                               (<dezero-array> (vector it))
-                               (vector it)))))
+                               (<dezero-array> (list it))
+                               (cons it)))))
 
-                 (loop for x across (@inputs func)
-                       for gx across gxs
+                 (loop for x in (@inputs func)
+                       for gx in gxs
                        do (progn
                             (setf (@gradient x)
                                   (if (@gradient x)
@@ -195,7 +195,7 @@
                             (when (@creator x)
                               (add-func (@creator x)))))
                  (unless retain-gradient
-                   (loop for y across (@outputs func)
+                   (loop for y in (@outputs func)
                          do (setf (@gradient (tg:weak-pointer-value y))
                                   nil))))))))
 ;;;;;;;;;;;;;;;;;;;; end <variable> ;;;;;;;;;;;;;;;;;;;;;
@@ -224,21 +224,21 @@
   (let* ((xs (map 'list #'@data inputs))
          (ys (let ((it (apply #'forward func xs)))
                (etypecase it
-                 (<dezero-array> (vector it))
-                 (vector it))))
-         (outputs (map 'vector (lambda (y)
+                 (<dezero-array> (list it))
+                 (cons it))))
+         (outputs (map 'list (lambda (y)
                                  (<variable> (as-array y)))
                        ys)))
     (when *enable-backpropagation*
       (setf (@generation func)
             (loop for x in inputs maximize (@generation x)))
-      (loop for output across outputs
+      (loop for output in outputs
             do (set-creator output func)))
-    (setf (@inputs func) (map 'vector #'identity inputs))
-    (setf (@outputs func) (map 'vector #'tg:make-weak-pointer outputs))
+    (setf (@inputs func) inputs)
+    (setf (@outputs func) (map 'list #'tg:make-weak-pointer outputs))
     (if (> (length outputs) 1)
         outputs
-        (aref outputs 0))))
+        (first outputs))))
 ;;;;;;;;;;;;;;;;;;;; end <function> ;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -261,7 +261,7 @@
   (declare (ignore retain-gradient))
   (declare (optimize (safety 3) (debug 3)))
   (let ((gy (first gys)))
-    (vector gy gy)))
+    (list gy gy)))
 ;;;;;;;;;;;;;;;;;;;; end <add> ;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -283,8 +283,8 @@
 (defmethod backward ((func <square>) &optional (retain-gradient nil) &rest gys)
   (declare (ignore retain-gradient))
   (declare (optimize (safety 3) (debug 3)))
-  (let* ((x (@data (elt (@inputs func) 0)))
+  (let* ((x (@data (first (@inputs func))))
          (tw (.*. 2 x))
-         (gx (map 'vector (lambda (x) (.*. tw x)) gys)))
+         (gx (map 'list (lambda (x) (.*. tw x)) gys)))
     gx))
 ;;;;;;;;;;;;;;;;;;;; end <square> ;;;;;;;;;;;;;;;;;;;;;
