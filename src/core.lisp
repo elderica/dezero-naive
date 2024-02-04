@@ -24,6 +24,8 @@
 
 (in-package :dezero-naive.core)
 
+(defparameter *enable-backpropagation* t)
+
 ;;;;;;;;;;;;;;;;;;;; begin <dezero-array> ;;;;;;;;;;;;;;;;;;;;;
 (defclass <dezero-array> ()
   ((a :initarg :a
@@ -221,10 +223,11 @@
          (outputs (map 'vector (lambda (y)
                                  (<variable> (as-array y)))
                        ys)))
-    (setf (@generation func)
-          (loop for x in inputs maximize (@generation x)))
-    (loop for output across outputs
-          do (set-creator output func))
+    (when *enable-backpropagation*
+      (setf (@generation func)
+            (loop for x in inputs maximize (@generation x)))
+      (loop for output across outputs
+            do (set-creator output func)))
     (setf (@inputs func) (map 'vector #'identity inputs))
     (setf (@outputs func) (map 'vector #'tg:make-weak-pointer outputs))
     (if (> (length outputs) 1)
