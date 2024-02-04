@@ -167,7 +167,10 @@
       (add-func (@creator var))
       (loop while funcs
             do (let* ((func (pop funcs))
-                      (gys (map 'list #'@gradient (@outputs func)))
+                      (gys (map 'list
+                                (lambda (gy)
+                                  (@gradient (tg:weak-pointer-value gy)))
+                                (@outputs func)))
                       (gxs (let ((it (apply #'backward func gys)))
                              (etypecase it
                                (<dezero-array> (vector it))
@@ -219,7 +222,7 @@
     (loop for output across outputs
           do (set-creator output func))
     (setf (@inputs func) (map 'vector #'identity inputs))
-    (setf (@outputs func) outputs)
+    (setf (@outputs func) (map 'vector #'tg:make-weak-pointer outputs))
     (if (> (length outputs) 1)
         outputs
         (aref outputs 0))))
