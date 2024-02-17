@@ -109,9 +109,9 @@
 
 
 (defun ensure-array (x)
-  (etypecase x
-    (number (vector x))
-    (array x)))
+  (if (numberp x)
+      (vector x)
+      x))
 
 
 ;;;;;;;;;;;;;;;;;;;; begin <function> ;;;;;;;;;;;;;;;;;;;;;
