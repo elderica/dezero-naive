@@ -3,9 +3,6 @@
   (:nicknames :dezero-naive.core)
   (:use :cl)
   (:export
-   :@a
-   :dzvector
-
    :call
    :backward
 
@@ -26,38 +23,10 @@
 
 (defparameter *enable-backpropagation* t)
 
-;;;;;;;;;;;;;;;;;;;; begin <dezero-array> ;;;;;;;;;;;;;;;;;;;;;
-(defclass <dezero-array> ()
-  ((a :initarg :a
-      :accessor @a)))
-
-(defmethod print-object ((a <dezero-array>) stream)
-  (print-unreadable-object (a stream :type t :identity nil)
-    (format stream
-             "~<~W~:>"
-             (list (@a a)))))
-
-(defun dezero-array-p (thing)
-  (typep thing '<dezero-array>))
-
-(defun make-dezero-array (dimensions &key initial-element initial-contents)
-  (declare (optimize (safety 3) (debug 3)))
-  (let ((a (cond
-             (initial-element
-              (make-array dimensions :initial-element initial-element))
-             (initial-contents
-              (make-array dimensions :initial-contents initial-contents)))))
-
-    (make-instance '<dezero-array> :a a)))
-
-(defun dzvector (&rest elements)
-  (declare (optimize (safety 3) (debug 3)))
-  (make-dezero-array (length elements) :initial-contents elements))
-
 (defun full-like (array fill-value)
   (declare (optimize (safety 3) (debug 3)))
-  (let ((dims (array-dimensions (@a array))))
-    (make-dezero-array dims :initial-element fill-value)))
+  (let ((dims (array-dimensions array)))
+    (make-array dims :initial-element fill-value)))
 
 (defun zeros-like (array)
   (declare (optimize (safety 3) (debug 3)))
@@ -88,12 +57,6 @@
   (aops:vectorize (left right)
     (+ left right)))
 
-(defmethod .+. ((left <dezero-array>) (right <dezero-array>))
-  (declare (optimize (safety 3) (debug 3)))
-  (let ((r (.+. (@a left) (@a right))))
-    (make-instance '<dezero-array> :a r)))
-
-
 (defgeneric .*. (left right))
 
 (defmethod .*. ((left number) (right number))
@@ -114,18 +77,6 @@
   (aops:vectorize (left right)
     (* left right)))
 
-(defmethod .*. ((left number) (right <dezero-array>))
-  (declare (optimize (safety 3) (debug 3)))
-  (let ((r (.*. left (@a right))))
-    (make-instance '<dezero-array> :a r)))
-
-(defmethod .*. ((left <dezero-array>) (right <dezero-array>))
-  (declare (optimize (safety 3) (debug 3)))
-  (let ((r (.*. (@a left) (@a right))))
-    (make-instance '<dezero-array> :a r)))
-;;;;;;;;;;;;;;;;;;;; end <dezero-array> ;;;;;;;;;;;;;;;;;;;;;
-
-
 (defgeneric call (function &rest inputs))
 
 (defgeneric forward (function &rest xs))
@@ -141,7 +92,7 @@
    (generation :initform 0 :accessor @generation)))
 
 (defmethod initialize-instance :after ((var <variable>) &key)
-  (check-type (@data var) <dezero-array>))
+  (check-type (@data var) array))
 
 (defun <variable> (data)
   (make-instance '<variable> :data data))
@@ -181,7 +132,7 @@
                                 (@outputs func)))
                       (gxs (let ((it (apply #'backward func nil gys)))
                              (etypecase it
-                               (<dezero-array> (list it))
+                               (array (list it))
                                (cons it)))))
 
                  (loop for x in (@inputs func)
@@ -203,8 +154,8 @@
 
 (defun as-array (x)
   (etypecase x
-    (number (dzvector x))
-    (<dezero-array> x)))
+    (number (vector x))
+    (array x)))
 
 
 ;;;;;;;;;;;;;;;;;;;; begin <function> ;;;;;;;;;;;;;;;;;;;;;
@@ -224,7 +175,7 @@
   (let* ((xs (map 'list #'@data inputs))
          (ys (let ((it (apply #'forward func xs)))
                (etypecase it
-                 (<dezero-array> (list it))
+                 (array (list it))
                  (cons it))))
          (outputs (map 'list (lambda (y)
                                  (<variable> (as-array y)))

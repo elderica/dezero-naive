@@ -3,9 +3,6 @@
   (:use :cl :rove)
   (:nicknames :dezero-naive.test)
   (:import-from :dezero-naive.core
-   :@a
-   :dzvector
-
    :call
    :backward
 
@@ -25,67 +22,72 @@
 
 (deftest square-test
     (testing "test forword single variable"
-             (let* ((x (<variable> (dzvector 2.0d0)))
+             (let* ((x (<variable> (vector 2.0d0)))
                     (y (square x))
                     (expected (vector 4.0d0)))
-               (ok (equalp (@a (@data y))
+               (ok (equalp (@data y)
                            expected))))
 
   (testing "test backward"
-    (let* ((x (<variable> (dzvector 3.0d0)))
+    (let* ((x (<variable> (vector 3.0d0)))
            (y (square x))
            (expected (vector 6.0d0)))
       (backward y)
-      (ok (equalp (@a (@gradient x))
+      (ok (equalp (@gradient x)
                   expected)))))
 
 (deftest add-test
   (testing "test add"
-    (let* ((x0 (<variable> (dzvector 7.0d0)))
-           (x1 (<variable> (dzvector 5.0d0)))
+    (let* ((x0 (<variable> (vector 7.0d0)))
+           (x1 (<variable> (vector 5.0d0)))
            (y (add x0 x1))
-           (r (@a (@data y)))
+           (r (@data y))
            (expected (vector 12.0d0)))
       (ok (equalp r expected)))))
 
 (deftest add-square-test
   (testing "test backward add and square"
-    (let* ((x (<variable> (dzvector 2.0d0)))
-           (y (<variable> (dzvector 3.0d0)))
+    (let* ((x (<variable> (vector 2.0d0)))
+           (y (<variable> (vector 3.0d0)))
            (z (add (square x) (square y))))
       (backward z)
-      (ok (equalp (@a (@data z)) (vector 13.0d0)))
-      (ok (equalp (@a (@gradient x)) (vector 4.0d0)))
-      (ok (equalp (@a (@gradient y)) (vector 6.0d0))))))
+      (ok (equalp (@data z)
+                  (vector 13.0d0)))
+      (ok (equalp (@gradient x)
+                  (vector 4.0d0)))
+      (ok (equalp (@gradient y)
+                  (vector 6.0d0))))))
 
 (deftest use-same-variable
   (testing "same variable"
-    (let* ((x (<variable> (dzvector 3.d0)))
+    (let* ((x (<variable> (vector 3.d0)))
            (y (add x x)))
       (backward y)
-      (ok (equalp (@a (@gradient x))
+      (ok (equalp (@gradient x)
                   (vector 2.d0)))))
 
   (testing "same variable again"
-    (let* ((x (<variable> (dzvector 3.d0)))
+    (let* ((x (<variable> (vector 3.d0)))
            (y (add (add x x) x)))
       (backward y)
-      (ok (equalp (@a (@gradient x)) (vector 3.d0)))))
+      (ok (equalp (@gradient x)
+                  (vector 3.d0))))
 
   (testing "backward twice"
-    (let* ((x (<variable> (dzvector 3.0d0)))
+    (let* ((x (<variable> (vector 3.0d0)))
            (y (add x x)))
       (backward y)
-      (ok (equalp (@a (@gradient x)) (vector 2.d0)))
+      (ok (equalp (@gradient x)
+                  (vector 2.d0)))
       (clear-gradient x)
       (let ((y (add (add x x) x)))
         (backward y)
-        (ok (equalp (@a (@gradient x))
-                    (vector 3.d0)))))))
+        (ok (equalp (@gradient x)
+                    (vector 3.d0))))))))
 
 (deftest step16
   (testing "step 16"
-    (let* ((x (<variable> (dzvector 2.0)))
+    (let* ((x (<variable> (vector 2.0)))
            (>A> (<square>))
            (a (call >A> x))
            (>B> (<square>))
@@ -104,5 +106,7 @@
       (ok (= (@generation c) 2))
       (ok (= (@generation >D>) 2))
       (ok (= (@generation y) 3))
-      (ok (equalp (@a (@data y)) (vector 32.d0)))
-      (ok (equalp (@a (@gradient x)) (vector 64.d0))))))
+      (ok (equalp (@data y)
+                  (vector 32.d0)))
+      (ok (equalp (@gradient x)
+                  (vector 64.d0))))))
