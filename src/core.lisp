@@ -106,11 +106,10 @@
                        for gx in gxs
                        do (progn
                             (setf (@gradient x)
-                                  (if (@gradient x)
-                                      (let ((agx (@gradient x)))
-                                        (aops:vectorize (agx gx)
-                                          (+ agx gx)))
-                                      gx))
+                                  (uiop:if-let ((agx (@gradient x)))
+                                    (aops:vectorize (agx gx)
+                                      (+ agx gx))
+                                    gx))
 
                             (when (@creator x)
                               (add-func (@creator x)))))
