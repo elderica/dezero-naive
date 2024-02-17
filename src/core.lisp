@@ -36,13 +36,6 @@
   (declare (optimize (safety 3) (debug 3)))
   (full-like array 1))
 
-(defgeneric .+. (left right))
-
-(defmethod .+. ((left vector) (right vector))
-  (declare (optimize (safety 3) (debug 3)))
-  (aops:vectorize (left right)
-    (+ left right)))
-
 (defgeneric .*. (left right))
 
 (defmethod .*. ((left number) (right vector))
@@ -114,7 +107,9 @@
                        do (progn
                             (setf (@gradient x)
                                   (if (@gradient x)
-                                      (.+. (@gradient x) gx)
+                                      (let ((agx (@gradient x)))
+                                        (aops:vectorize (agx gx)
+                                          (+ agx gx)))
                                       gx))
 
                             (when (@creator x)
@@ -177,7 +172,8 @@
   (declare (optimize (safety 3) (debug 3)))
   (let ((x0 (first xs))
         (x1 (second xs)))
-    (.+. x0 x1)))
+     (aops:vectorize (x0 x1)
+       (+ x0 x1))))
 
 (defmethod backward ((func <add>) &optional (retain-gradient nil) &rest gys)
   (declare (ignore retain-gradient))
