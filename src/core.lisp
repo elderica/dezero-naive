@@ -38,34 +38,12 @@
 
 (defgeneric .+. (left right))
 
-(defmethod .+. ((left number) (right number))
-  (declare (optimize (safety 3) (debug 3)))
-  (+ left right))
-
-(defmethod .+. ((left vector) (right number))
-  (declare (optimize (safety 3) (debug 3)))
-  (aops:vectorize (left)
-    (+ left right)))
-
-(defmethod .+. ((left number) (right vector))
-  (declare (optimize (safety 3) (debug 3)))
-  (aops:vectorize (right)
-    (+ left right)))
-
 (defmethod .+. ((left vector) (right vector))
   (declare (optimize (safety 3) (debug 3)))
   (aops:vectorize (left right)
     (+ left right)))
 
 (defgeneric .*. (left right))
-
-(defmethod .*. ((left number) (right number))
-  (* left right))
-
-(defmethod .*. ((left vector) (right number))
-  (declare (optimize (safety 3) (debug 3)))
-  (aops:vectorize (left)
-    (* left right)))
 
 (defmethod .*. ((left number) (right vector))
   (declare (optimize (safety 3) (debug 3)))
