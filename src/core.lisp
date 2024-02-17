@@ -36,18 +36,6 @@
   (declare (optimize (safety 3) (debug 3)))
   (full-like array 1))
 
-(defgeneric .*. (left right))
-
-(defmethod .*. ((left number) (right vector))
-  (declare (optimize (safety 3) (debug 3)))
-  (aops:vectorize (right)
-    (* left right)))
-
-(defmethod .*. ((left vector) (right vector))
-  (declare (optimize (safety 3) (debug 3)))
-  (aops:vectorize (left right)
-    (* left right)))
-
 (defgeneric call (function &rest inputs))
 
 (defgeneric forward (function &rest xs))
@@ -191,6 +179,18 @@
 (defun square (&rest xs)
   (declare (optimize (safety 3) (debug 3)))
   (apply #'call (<square>) xs))
+
+(defgeneric .*. (left right))
+
+(defmethod .*. ((left number) (right vector))
+  (declare (optimize (safety 3) (debug 3)))
+  (aops:vectorize (right)
+    (* left right)))
+
+(defmethod .*. ((left vector) (right vector))
+  (declare (optimize (safety 3) (debug 3)))
+  (aops:vectorize (left right)
+    (* left right)))
 
 (defmethod forward ((func <square>) &rest xs)
   (declare (optimize (safety 3) (debug 3)))
