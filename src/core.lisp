@@ -120,7 +120,7 @@
 ;;;;;;;;;;;;;;;;;;;; end <variable> ;;;;;;;;;;;;;;;;;;;;;
 
 
-(defun as-array (x)
+(defun ensure-array (x)
   (etypecase x
     (number (vector x))
     (array x)))
@@ -143,7 +143,7 @@
   (let* ((xs (map 'list #'@data inputs))
          (ys (uiop:ensure-list (apply #'forward func xs)))
          (outputs (map 'list (lambda (y)
-                                 (<variable> (as-array y)))
+                                 (<variable> (ensure-array y)))
                        ys)))
     (when *enable-backpropagation*
       (setf (@generation func)
