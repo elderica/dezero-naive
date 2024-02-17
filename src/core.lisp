@@ -24,16 +24,13 @@
 (defparameter *enable-backpropagation* t)
 
 (defun full-like (array fill-value)
-  (declare (optimize (safety 3) (debug 3)))
   (let ((dims (array-dimensions array)))
     (make-array dims :initial-element fill-value)))
 
 (defun zeros-like (array)
-  (declare (optimize (safety 3) (debug 3)))
   (full-like array 0))
 
 (defun ones-like (array)
-  (declare (optimize (safety 3) (debug 3)))
   (full-like array 1))
 
 (defgeneric call (function &rest inputs))
