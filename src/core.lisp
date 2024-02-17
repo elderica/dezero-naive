@@ -130,11 +130,7 @@
                                 (lambda (gy)
                                   (@gradient (tg:weak-pointer-value gy)))
                                 (@outputs func)))
-                      (gxs (let ((it (apply #'backward func nil gys)))
-                             (etypecase it
-                               (array (list it))
-                               (cons it)))))
-
+                      (gxs (uiop:ensure-list (apply #'backward func nil gys))))
                  (loop for x in (@inputs func)
                        for gx in gxs
                        do (progn
@@ -173,10 +169,7 @@
 (defmethod call ((func <function>) &rest inputs)
   (declare (optimize (safety 3) (debug 3)))
   (let* ((xs (map 'list #'@data inputs))
-         (ys (let ((it (apply #'forward func xs)))
-               (etypecase it
-                 (array (list it))
-                 (cons it))))
+         (ys (uiop:ensure-list (apply #'forward func xs)))
          (outputs (map 'list (lambda (y)
                                  (<variable> (as-array y)))
                        ys)))
