@@ -6,6 +6,6 @@
 
 (asdf:test-system :dezero-naive.test)
 
-(sb-cover:report (asdf:system-relative-pathname :dezero-naive "../cover/"))
+(sb-cover:report (asdf:system-relative-pathname :dezero-naive "cover/"))
 
 (declaim (optimize (sb-cover:store-coverage-data 0)))
