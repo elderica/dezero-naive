@@ -1,19 +1,21 @@
 * dezero-naive
 
-dezero in Common Lisp
-
-** TODO Fill me in
+DeZero in Common Lisp
 
 * Requirements
 
+- [[http://www.sbcl.org/][Steel Bank Common Lisp]]
 - [[https://www.quicklisp.org/beta/][Quicklisp]]
+- [[https://lisp-stat.dev/docs/manuals/array-operations/][Array Operations]]
+- [[https://trivial-garbage.common-lisp.dev/][Trivial Garbage]]
+- [[https://github.com/fukamachi/rove][Rove]]
 
 * Installation
 
-Clone the repo in your [[https://www.quicklisp.org/beta/faq.html][Quicklisp local-projects]] directory.
+Clone the repo to =~/common-lisp/dezero-naive= dicrectory.
 
-#+begin_src lisp
-(ql:register-local-projects)
+#+begin_src shell
+git clone https://github.com/elderica/dezero-naive.git ~/common-lisp/dezero-naive
 #+end_src
 
 Then load the system.
@@ -37,6 +39,15 @@ In order to run the tests you can evaluate the following expressions.
 CL-USER> (ql:quickload :dezero-naive.test)
 CL-USER> (asdf:test-system :dezero-naive.test)
 #+end_src
+
+* GNU Makefile
+
+~Makefile~ has several targets.
+
+- ~test~ runs test suites.
+- ~sb-cover~ collects code coverage using ~:sb-cover~.
+- ~build-image~ builds docker image.
+- ~test-image~ runs test suites in docker container.
 
 * Contributing
 
