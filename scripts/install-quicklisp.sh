@@ -24,11 +24,15 @@ case "${LISP}" in
     sbcl)
         _no_debug_flag="--non-interactive"
         ;;
+    ecl)
+        _no_debug_flag="--nodebug"
+        ;;
 esac
 
 ${LISP} "${_no_debug_flag}"  \
         --load quicklisp.lisp \
         --eval '(quicklisp-quickstart:install)' \
-        --eval '(ql-util:without-prompting (ql:add-to-init-file))'
+        --eval '(ql-util:without-prompting (ql:add-to-init-file))' \
+        --eval '(uiop:quit)'
 
 rm quicklisp.lisp

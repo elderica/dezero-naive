@@ -1,10 +1,9 @@
 .PHONY: test sb-cover quickload build-image test-image help
 .DEFAULT_GOAL := help
+LISP ?= sbcl
 
 test: ## runs test suites
-	sbcl --noinform --non-interactive \
-		--load scripts/load-asd.lisp \
-		--load scripts/run-tests.lisp
+	scripts/run-tests.sh
 
 sb-cover: ## collects code coverage using `:sb-cover`
 	sbcl --noinform --non-interactive \
@@ -12,9 +11,7 @@ sb-cover: ## collects code coverage using `:sb-cover`
 		--load scripts/sb-cover.lisp
 
 quickload: ## quickloads the system in advance
-	sbcl --noinform --non-interactive \
-		--load scripts/load-asd.lisp \
-		--eval "(ql:quickload :dezero-naive.test)"
+	scripts/quickload.sh
 
 build-image: ## builds docker image
 	docker buildx build --tag elderica/dezero-naive:test .
