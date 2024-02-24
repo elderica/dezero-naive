@@ -1,0 +1,29 @@
+name: run-tests
+on: [ push, pull_request ]
+jobs:
+  run-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        implementation:
+          - sbcl
+          - ecl
+        include:
+          - implementation: sbcl
+            lisp: sbcl
+          - implementation: ecl
+            lisp: ecl
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Common Lisp implementation
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.implementation }}
+      - name: Install Quicklisp
+        run: |
+          make install-quicklisp LISP=${{ matrix.lisp }}
+      - name: Run test
+        run: |
+          make test LISP=${{ matrix.lisp }}
