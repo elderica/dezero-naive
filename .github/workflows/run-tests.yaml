@@ -23,7 +23,7 @@ jobs:
           sudo apt-get install -y ${{ matrix.implementation }}
       - name: Install Quicklisp
         run: |
-          env LISP=${{ matrix.lisp }} scripts/install-quicklisp.sh
+          make install-quicklisp LISP=${{ matrix.lisp }}
       - name: Run test
         run: |
           make test LISP=${{ matrix.lisp }}
