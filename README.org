@@ -1,5 +1,8 @@
 * dezero-naive
 
+#+ATTR_HTML:
+[[https://github.com/elderica/dezero-naive/actions/workflows/run-tests.yaml][https://github.com/elderica/dezero-naive/actions/workflows/run-tests.yaml/badge.svg?branch=main]]
+
 DeZero in Common Lisp
 
 * Requirements
