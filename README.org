@@ -12,7 +12,7 @@ DeZero in Common Lisp
 
 * Installation
 
-Clone the repo to =~/common-lisp/dezero-naive= dicrectory.
+Clone the repo to =~/common-lisp/dezero-naive= directory.
 
 #+begin_src shell
 git clone https://github.com/elderica/dezero-naive.git ~/common-lisp/dezero-naive
