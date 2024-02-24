@@ -4,6 +4,15 @@ jobs:
   run-tests:
     strategy:
       fail-fast: false
+      matrix:
+        implementation:
+          - sbcl
+          - ecl
+        include:
+          - implementation: sbcl
+            lisp: sbcl
+          - implementation: ecl
+            lisp: ecl
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -11,10 +20,10 @@ jobs:
       - name: Install Common Lisp implementation
         run: |
           sudo apt-get update
-          sudo apt-get install -y sbcl
+          sudo apt-get install -y ${{ matrix.implementation }}
       - name: Install Quicklisp
         run: |
-          scripts/install-quicklisp.sh
+          env LISP=${{ matrix.lisp }} scripts/install-quicklisp.sh
       - name: Run test
         run: |
-          make test
+          make test LISP=${{ matrix.lisp }}
