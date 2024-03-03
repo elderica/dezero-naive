@@ -140,6 +140,14 @@
     (if (> (length outputs) 1)
         outputs
         (first outputs))))
+
+(defmethod forward ((function <function>) &rest xs)
+  (declare (ignore xs))
+  (error "not implemented"))
+
+(defmethod backward ((function <function>) &optional retain-gradient &rest gys)
+  (declare (ignore retain-gradient gys))
+  (error "not implemented"))
 ;;;;;;;;;;;;;;;;;;;; end <function> ;;;;;;;;;;;;;;;;;;;;;
 
 
