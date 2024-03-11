@@ -1,7 +1,6 @@
-(in-package :cl-user)
+(in-package :common-lisp)
 (defpackage :dezero-naive.test
-  (:use :cl :rove)
-  (:nicknames :dezero-naive.test)
+  (:use :common-lisp :rove)
   (:import-from :dezero-naive.core
    :call
    :backward

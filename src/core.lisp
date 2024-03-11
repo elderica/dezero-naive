@@ -1,7 +1,8 @@
-(in-package :cl-user)
+(in-package :common-lisp-user)
 (defpackage :dezero-naive.core
-  (:nicknames :dezero-naive.core)
-  (:use :cl)
+  (:nicknames :dezero :dz)
+  (:use :common-lisp)
+  (:shadow :exp)
   (:export
    :call
    :backward
@@ -16,12 +17,11 @@
    :<add>
    :add
    :<square>
-   :square
-   ))
-
+   :square))
 (in-package :dezero-naive.core)
 
 (defparameter *enable-backpropagation* t)
+(defparameter *retain-gradient* nil)
 
 (defun full-like (array fill-value)
   (let ((dims (array-dimensions array)))
@@ -33,31 +33,45 @@
 (defun ones-like (array)
   (full-like array 1))
 
+(defun ensure-array (x)
+  (if (arrayp x)
+      x
+      (vector x)))
+
 (defgeneric call (function &rest inputs))
-
 (defgeneric forward (function &rest xs))
+(defgeneric backward (function-or-variable &optional gys))
 
-(defgeneric backward (function-or-variable &optional retain-gradient &rest gys))
-
-
-;;;;;;;;;;;;;;;;;;;; begin <variable> ;;;;;;;;;;;;;;;;;;;;;
 (defclass <variable> ()
   ((data :initarg :data :accessor @data)
    (gradient :initform nil :accessor @gradient)
    (creator :initform nil :accessor @creator)
    (generation :initform 0 :accessor @generation)))
 
-(defmethod initialize-instance :after ((var <variable>) &key)
-  (check-type (@data var) array))
-
 (defun <variable> (data)
   (make-instance '<variable> :data data))
+
+(defmethod initialize-instance :after ((var <variable>) &key)
+  (check-type (@data var) array))
 
 (defmethod print-object ((var <variable>) stream)
   (print-unreadable-object (var stream :type t :identity nil)
     (format stream
             "~:@_~<data: ~W ~_gradient: ~W ~_creator: ~W ~_generation: ~W~:>"
             (list (@data var) (@gradient var) (@creator var) (@generation var)))))
+
+(defclass <function> ()
+  ((inputs :initform nil :accessor @inputs)
+   (outputs :initform nil :accessor @outputs)
+   (generation :initform nil :accessor @generation)))
+
+(defun <function> ())
+
+(defmethod print-object ((func <function>) stream)
+  (print-unreadable-object (func stream :type t :identity nil)
+    (format stream
+            "~<generation: ~W~:>"
+            (list (@generation func)))))
 
 (defmethod set-creator ((var <variable>) func)
   (setf (@creator var) func)
@@ -66,13 +80,10 @@
 (defmethod clear-gradient ((var <variable>))
   (setf (@gradient var) nil))
 
-(defmethod backward ((var <variable>) &optional (retain-gradient nil) &rest gys)
-  (declare (optimize (safety 3) (debug 3)))
+(defmethod backward ((var <variable>) &optional gys)
   (declare (ignore gys))
-
   (unless (@gradient var)
     (setf (@gradient var) (ones-like (@data var))))
-
   (let (funcs seen-set)
     (flet ((add-func (f)
              (unless (member f seen-set)
@@ -80,133 +91,66 @@
                (pushnew f seen-set)
                (setf funcs (sort funcs #'> :key #'@generation)))))
       (add-func (@creator var))
-      (loop while funcs
-            do (let* ((func (pop funcs))
-                      (gys (map 'list
-                                (lambda (gy)
-                                  (@gradient (tg:weak-pointer-value gy)))
-                                (@outputs func)))
-                      (gxs (uiop:ensure-list (apply #'backward func nil gys))))
-                 (loop for x in (@inputs func)
-                       for gx in gxs
-                       do (progn
-                            (setf (@gradient x)
-                                  (uiop:if-let ((agx (@gradient x)))
-                                    (aops:vectorize (agx gx)
-                                      (+ agx gx))
-                                    gx))
-
-                            (when (@creator x)
-                              (add-func (@creator x)))))
-                 (unless retain-gradient
-                   (loop for y in (@outputs func)
-                         do (setf (@gradient (tg:weak-pointer-value y))
-                                  nil))))))))
-;;;;;;;;;;;;;;;;;;;; end <variable> ;;;;;;;;;;;;;;;;;;;;;
-
-
-(defun ensure-array (x)
-  (if (numberp x)
-      (vector x)
-      x))
-
-
-;;;;;;;;;;;;;;;;;;;; begin <function> ;;;;;;;;;;;;;;;;;;;;;
-(defclass <function> ()
-  ((inputs :initform nil :accessor @inputs)
-   (outputs :initform nil :accessor @outputs)
-   (generation :initform nil :accessor @generation)))
-
-(defmethod print-object ((func <function>) stream)
-  (print-unreadable-object (func stream :type t :identity nil)
-    (format stream
-            "~<generation: ~W~:>"
-            (list (@generation func)))))
+      (loop :while funcs :do
+        (let* ((func (pop funcs))
+               (gys (mapcar (lambda (gy)
+                              (@gradient (tg:weak-pointer-value gy)))
+                            (@outputs func)))
+               (gxs (uiop:ensure-list (apply #'backward func gys))))
+          (loop :for x :in (@inputs func)
+                :for gx :in gxs
+                :do (with-accessors ((x-grad @gradient)) x
+                      (setf x-grad (if x-grad
+                                       (aops:vectorize (x-grad gx)
+                                         (+ x-grad gx))
+                                       gx))
+                      (when (@creator x)
+                        (add-func (@creator x)))))
+          (unless *retain-gradient*
+            (dolist (y (@outputs func))
+              (setf (@gradient (tg:weak-pointer-value y))
+                    nil))))))))
 
 (defmethod call ((func <function>) &rest inputs)
-  (declare (optimize (safety 3) (debug 3)))
-  (let* ((xs (map 'list #'@data inputs))
+  (let* ((xs (mapcar #'@data inputs))
          (ys (uiop:ensure-list (apply #'forward func xs)))
-         (outputs (map 'list (lambda (y)
-                                 (<variable> (ensure-array y)))
-                       ys)))
+         (outputs (mapcar (lambda (y) (<variable> (ensure-array y))) ys)))
     (when *enable-backpropagation*
       (setf (@generation func)
-            (loop for x in inputs maximize (@generation x)))
-      (loop for output in outputs
-            do (set-creator output func)))
+            (reduce #'max inputs :key #'@generation))
+      (dolist (output outputs)
+        (set-creator output func)))
     (setf (@inputs func) inputs)
-    (setf (@outputs func) (map 'list #'tg:make-weak-pointer outputs))
-    (if (> (length outputs) 1)
-        outputs
-        (first outputs))))
+    (setf (@outputs func) (mapcar #'tg:make-weak-pointer outputs))
+    (if (= (length outputs) 1)
+        (car outputs)
+        outputs)))
 
-(defmethod forward ((function <function>) &rest xs)
-  (declare (ignore xs))
-  (error "not implemented"))
-
-(defmethod backward ((function <function>) &optional retain-gradient &rest gys)
-  (declare (ignore retain-gradient gys))
-  (error "not implemented"))
-;;;;;;;;;;;;;;;;;;;; end <function> ;;;;;;;;;;;;;;;;;;;;;
-
-
-
-;;;;;;;;;;;;;;;;;;;; begin <add> ;;;;;;;;;;;;;;;;;;;;;
 (defclass <add> (<function>) ())
 
 (defun <add> () (make-instance '<add>))
 
-(defun add (x0 x1)
-  (call (<add>) x0 x1))
+(defun add (&rest xs) (apply #'call (<add>) xs))
 
 (defmethod forward ((func <add>) &rest xs)
-  (declare (optimize (safety 3) (debug 3)))
-  (let ((x0 (first xs))
-        (x1 (second xs)))
-     (aops:vectorize (x0 x1)
-       (+ x0 x1))))
+  (list (destructuring-bind (x0 x1) xs
+          (aops:vectorize (x0 x1) (+ x0 x1)))))
 
-(defmethod backward ((func <add>) &optional (retain-gradient nil) &rest gys)
-  (declare (ignore retain-gradient))
-  (declare (optimize (safety 3) (debug 3)))
-  (let ((gy (first gys)))
-    (list gy gy)))
-;;;;;;;;;;;;;;;;;;;; end <add> ;;;;;;;;;;;;;;;;;;;;;
+(defmethod backward ((func <add>) &optional gy)
+  (list gy gy))
 
-
-
-;;;;;;;;;;;;;;;;;;;; begin <square> ;;;;;;;;;;;;;;;;;;;;;
 (defclass <square> (<function>) ())
 
 (defun <square> () (make-instance '<square>))
 
-(defun square (&rest xs)
-  (declare (optimize (safety 3) (debug 3)))
-  (apply #'call (<square>) xs))
-
-(defgeneric .*. (left right))
-
-(defmethod .*. ((left number) (right vector))
-  (declare (optimize (safety 3) (debug 3)))
-  (aops:vectorize (right)
-    (* left right)))
-
-(defmethod .*. ((left vector) (right vector))
-  (declare (optimize (safety 3) (debug 3)))
-  (aops:vectorize (left right)
-    (* left right)))
+(defun square (x) (call (<square>) x))
 
 (defmethod forward ((func <square>) &rest xs)
-  (declare (optimize (safety 3) (debug 3)))
   (let ((x (first xs)))
-    (.*. x x)))
+    (aops:vectorize (x)
+      (* x x))))
 
-(defmethod backward ((func <square>) &optional (retain-gradient nil) &rest gys)
-  (declare (ignore retain-gradient))
-  (declare (optimize (safety 3) (debug 3)))
+(defmethod backward ((func <square>) &optional gy)
   (let* ((x (@data (first (@inputs func))))
-         (tw (.*. 2 x))
-         (gx (map 'list (lambda (x) (.*. tw x)) gys)))
+         (gx (aops:vectorize (x gy) (* x gy 2.0d0))))
     gx))
-;;;;;;;;;;;;;;;;;;;; end <square> ;;;;;;;;;;;;;;;;;;;;;
