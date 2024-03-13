@@ -23,20 +23,16 @@
 (defparameter *enable-backpropagation* t)
 (defparameter *retain-gradient* nil)
 
-(defun full-like (array fill-value)
-  (let ((dims (array-dimensions array)))
-    (make-array dims :initial-element fill-value)))
-
 (defun zeros-like (array)
-  (full-like array 0))
+  "return an array of zeros with the same dimensions and element type as a given array"
+  (aops:zeros* (aops:element-type array) (aops:dims array)))
 
 (defun ones-like (array)
-  (full-like array 1))
+  "return an array of ones with the same dimensions and element type as a given array"
+  (aops:ones* (aops:element-type array) (aops:dims array)))
 
 (defun ensure-array (x)
-  (if (arrayp x)
-      x
-      (vector x)))
+  (if (arrayp x) x (vector x)))
 
 (defgeneric call (function &rest inputs))
 (defgeneric forward (function &rest xs))
@@ -44,12 +40,13 @@
 
 (defclass <variable> ()
   ((data :initarg :data :accessor @data)
+   (name :initarg :name :initform nil :accessor @name)
    (gradient :initform nil :accessor @gradient)
    (creator :initform nil :accessor @creator)
    (generation :initform 0 :accessor @generation)))
 
-(defun <variable> (data)
-  (make-instance '<variable> :data data))
+(defun <variable> (data &optional name)
+  (make-instance '<variable> :data data :name name))
 
 (defmethod initialize-instance :after ((var <variable>) &key)
   (check-type (@data var) array))
@@ -57,15 +54,34 @@
 (defmethod print-object ((var <variable>) stream)
   (print-unreadable-object (var stream :type t :identity nil)
     (format stream
-            "~:@_~<data: ~W ~_gradient: ~W ~_creator: ~W ~_generation: ~W~:>"
-            (list (@data var) (@gradient var) (@creator var) (@generation var)))))
+            "~:@_~<data: ~W ~_name: ~W ~_gradient: ~W ~_creator: ~W ~_generation: ~W~:>"
+            (list (@data var) (@name var)
+                  (@gradient var) (@creator var) (@generation var)))))
+
+(defmethod shape ((var <variable>))
+  "list of array dimensions"
+  (aops:dims (@data var)))
+
+(defmethod ndim ((var <variable>))
+  "number of array dimenstions"
+  (aops:rank (@data var)))
+
+(defmethod size ((var <variable>))
+  "number of elements in the array"
+  (aops:size (@data var)))
+
+(defmethod dtype ((var <variable>))
+  "data type of array's elements"
+  (aops:element-type (@data var)))
+
+(defmethod len ((var <variable>))
+  "number of array's first dimention"
+  (aops:dim (@data var) 0))
 
 (defclass <function> ()
   ((inputs :initform nil :accessor @inputs)
    (outputs :initform nil :accessor @outputs)
    (generation :initform nil :accessor @generation)))
-
-(defun <function> ())
 
 (defmethod print-object ((func <function>) stream)
   (print-unreadable-object (func stream :type t :identity nil)
