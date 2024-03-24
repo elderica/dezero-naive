@@ -1,26 +1,21 @@
 (in-package :common-lisp-user)
-(defpackage :dezero-naive.core
-  (:nicknames :dezero :dz)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (ql:quickload :array-operations)
+  (ql:quickload :trivial-garbage)
+  (ql:quickload :rove))
+(defpackage :dezero-naive.steps.step20
   (:use :common-lisp)
   (:shadow :exp)
   (:export
-   :call
    :backward
-
    :<variable>
    :@data
    :@gradient
-   :clear-gradient
-
-   :@generation
-
-   :<add>
-   :add
-   :<square>
    :square
-
-   :multiply))
-(in-package :dezero-naive.core)
+   :<square>
+   :multiply
+   :numerica-diff))
+(in-package :dezero-naive.steps.step20)
 
 (defparameter *enable-backpropagation* t)
 (defparameter *retain-gradient* nil)
@@ -188,3 +183,81 @@
         (x1 (@data (second (@inputs func)))))
     (list (aops:vectorize (gy x1) (* gy x1))
           (aops:vectorize (gy x0) (* gy x0)))))
+
+(let ((a (<variable> #(3.0)))
+      (b (<variable> #(2.0)))
+      (c (<variable> #(1.0))))
+  (let ((y (add (multiply a b) c)))
+    (backward y)
+    (format t "~A~%" y)
+    (format t "~A~%" (@gradient a))
+    (format t "~A~%" (@gradient b))))
+; #<<VARIABLE> data: #(7.0)
+;              name: NIL
+;              gradient: NIL
+;              creator: #<<ADD> generation: 1>
+;              generation: 2>
+; #(2.0)
+; #(3.0)
+;  => NIL
+
+(defun numerical-diff (f x &optional (eps 1.0d-4))
+  (let* ((x (@data x))
+         (x0 (<variable> (aops:vectorize (x) (- x eps))))
+         (x1 (<variable> (aops:vectorize (x) (+ x eps))))
+         (y0 (@data (call f x0)))
+         (y1 (@data (call f x1))))
+    (aops:vectorize (y1 y0)
+      (/ (- y1 y0)
+         (* 2 eps)))))
+
+(defpackage :dezero-naive.steps.step20.test
+  (:use :common-lisp :rove)
+  (:import-from :dezero-naive.steps.step20
+   :backward
+   :<variable>
+   :@data
+   :@gradient
+   :square
+   :<square>
+   :add
+   :multiply
+   :numerical-diff))
+(in-package :dezero-naive.steps.step20.test)
+
+(defun all-close (x y)
+  (>= 1d-08 (aops:vectorize-reduce #'max (x y)
+              (/ (abs (- x y)) (abs x)))))
+
+(deftest square-test
+  (testing "test forward"
+    (let* ((x (<variable> #(2.0)))
+           (y (square x))
+           (expected #(4.0)))
+      (ok (equalp (@data y) expected))))
+  (testing "test backward"
+    (let* ((x (<variable> #(3.0)))
+           (y (square x)))
+      (backward y)
+      (let ((expected #(6.0)))
+        (ok (equalp (@gradient x) expected)))))
+  (testing "test gradient check"
+    (let* ((x (<variable> (aops:generate (lambda () (random 1.0d0)) 1)))
+           (y (square x)))
+      (backward y)
+      (let ((num-grad (numerical-diff (<square>) x)))
+        (ok (all-close (@gradient x) num-grad))))))
+
+(deftest multiply-test
+  (testing "test forward"
+    (let ((a (<variable> #(3.0)))
+      (b (<variable> #(2.0)))
+      (c (<variable> #(1.0))))
+  (let ((y (add (multiply a b) c)))
+    (backward y)
+    (ok (equalp (@data y) #(7.0)))
+    (ok (equalp (@gradient a) #(2.0)))
+    (ok (equalp (@gradient b) #(3.0)))))))
+
+
+(run-suite :dezero-naive.steps.step20.test)

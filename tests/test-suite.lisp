@@ -16,6 +16,8 @@
    :add
    :<square>
    :square
+
+   :multiply
    ))
 (in-package :dezero-naive.test)
 
@@ -109,3 +111,14 @@
                   (vector 32.d0)))
       (ok (equalp (@gradient x)
                   (vector 64.d0))))))
+
+(deftest multiply-test
+  (testing "test forward"
+    (let ((a (<variable> #(3.0)))
+      (b (<variable> #(2.0)))
+      (c (<variable> #(1.0))))
+  (let ((y (add (multiply a b) c)))
+    (backward y)
+    (ok (equalp (@data y) #(7.0)))
+    (ok (equalp (@gradient a) #(2.0)))
+    (ok (equalp (@gradient b) #(3.0)))))))
